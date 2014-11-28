@@ -11,3 +11,4 @@ extern crate quickcheck;
 extern crate quickcheck_macros;
 
 pub mod tree;
+pub mod util;
