@@ -1,0 +1,14 @@
+[package]
+
+name = "acacia"
+version = "0.0.1"
+authors = ["Eduard Bopp <eduard.bopp@aepsil0n.de>"]
+
+[dependencies.nalgebra]
+git = "https://github.com/sebcrozet/nalgebra"
+
+[dependencies.quickcheck]
+git = "https://github.com/BurntSushi/quickcheck"
+
+[dependencies.quickcheck_macros]
+git = "https://github.com/BurntSushi/quickcheck"
