@@ -2,14 +2,27 @@ use nalgebra::{Dim, BaseFloat};
 use std::num::{Int, cast};
 use std::iter::AdditiveIterator;
 
+
+pub trait Positionable<P> {
+    fn position(&self) -> P;
+}
+
 pub struct Entry<O, P> {
     pub object: O,
     pub position: P,
 }
 
+impl<O, P> Positionable<P> for Entry<O, P>
+    where P: Copy
+{
+    fn position(&self) -> P {
+        self.position
+    }
+}
+
 pub enum NodeState<O, P, N> {
     Empty,
-    Leaf(Entry<O, P>),
+    Leaf(O),
     Branch(Vec<Node<O, P, N>>),
 }
 
@@ -71,10 +84,11 @@ pub fn branch_dispatch<P, N>(center: &P, point: &P) -> uint
 }
 
 impl<O, P, N> Node<O, P, N>
-    where P: Dim + Index<uint, N> + IndexMut<uint, N> + Copy,
+    where O: Positionable<P>,
+          P: Dim + Index<uint, N> + IndexMut<uint, N> + Copy,
           N: BaseFloat,
 {
-    pub fn insert(&mut self, entry: Entry<O, P>) {
+    pub fn insert(&mut self, entry: O) {
         let tmp = self.state.take().unwrap();
         self.state = Some(match tmp {
             NodeState::Empty => NodeState::Leaf(entry),
@@ -83,12 +97,12 @@ impl<O, P, N> Node<O, P, N>
                     .into_iter()
                     .map(|(p, n)| Node::new(NodeState::Empty, p, n))
                     .collect();
-                nodes[branch_dispatch(&self.center, &other.position)].insert(other);
-                nodes[branch_dispatch(&self.center, &entry.position)].insert(entry);
+                nodes[branch_dispatch(&self.center, &other.position())].insert(other);
+                nodes[branch_dispatch(&self.center, &entry.position())].insert(entry);
                 NodeState::Branch(nodes)
             },
             NodeState::Branch(mut nodes) => {
-                nodes[branch_dispatch(&self.center, &entry.position)].insert(entry);
+                nodes[branch_dispatch(&self.center, &entry.position())].insert(entry);
                 NodeState::Branch(nodes)
             },
         });
