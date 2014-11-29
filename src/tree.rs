@@ -20,28 +20,6 @@ impl<O, P> Positionable<P> for Entry<O, P>
     }
 }
 
-pub enum NodeState<O, P, N> {
-    Empty,
-    Leaf(O),
-    Branch(Vec<Node<O, P, N>>),
-}
-
-pub struct Node<O, P, N> {
-    pub state: Option<NodeState<O, P, N>>,
-    pub center: P,
-    pub extent: N,
-}
-
-impl<O, P, N> Node<O, P, N> {
-    pub fn new(state: NodeState<O, P, N>, center: P, extent: N) -> Node<O, P, N> {
-        Node {
-            state: Some(state),
-            center: center,
-            extent: extent,
-        }
-    }
-}
-
 
 /// Subdivision helper function
 ///
@@ -52,7 +30,7 @@ impl<O, P, N> Node<O, P, N> {
 /// # Params
 /// - The `old_center` is the center point of the (old) node.
 /// - The `old_extent` is its extent.
-pub fn subdivide<P, N>(old_center: &P, old_extent: &N) -> Vec<(P, N)>
+fn subdivide<P, N>(old_center: &P, old_extent: &N) -> Vec<(P, N)>
     where P: Dim + Index<uint, N> + IndexMut<uint, N> + Copy,
           N: BaseFloat,
 {
@@ -73,7 +51,8 @@ pub fn subdivide<P, N>(old_center: &P, old_extent: &N) -> Vec<(P, N)>
         .collect()
 }
 
-pub fn branch_dispatch<P, N>(center: &P, point: &P) -> uint
+
+fn branch_dispatch<P, N>(center: &P, point: &P) -> uint
     where P: Dim + Index<uint, N> + IndexMut<uint, N>,
           N: BaseFloat,
 {
@@ -81,6 +60,30 @@ pub fn branch_dispatch<P, N>(center: &P, point: &P) -> uint
     range(0, dim)
         .map(|k| if point[k] < center[k] {0} else {1 << k})
         .sum()
+}
+
+
+enum NodeState<O, P, N> {
+    Empty,
+    Leaf(O),
+    Branch(Vec<Node<O, P, N>>),
+}
+
+
+pub struct Node<O, P, N> {
+    state: Option<NodeState<O, P, N>>,
+    center: P,
+    extent: N,
+}
+
+impl<O, P, N> Node<O, P, N> {
+    pub fn empty(center: P, extent: N) -> Node<O, P, N> {
+        Node {
+            state: Some(NodeState::Empty),
+            center: center,
+            extent: extent,
+        }
+    }
 }
 
 impl<O, P, N> Node<O, P, N>
@@ -95,7 +98,7 @@ impl<O, P, N> Node<O, P, N>
             NodeState::Leaf(other) => {
                 let mut nodes: Vec<Node<O, P, N>> = subdivide(&self.center, &self.extent)
                     .into_iter()
-                    .map(|(p, n)| Node::new(NodeState::Empty, p, n))
+                    .map(|(p, n)| Node::empty(p, n))
                     .collect();
                 nodes[branch_dispatch(&self.center, &other.position())].insert(other);
                 nodes[branch_dispatch(&self.center, &entry.position())].insert(entry);
@@ -108,6 +111,7 @@ impl<O, P, N> Node<O, P, N>
         });
     }
 }
+
 
 #[cfg(test)]
 mod test {
@@ -196,11 +200,7 @@ mod test {
 
     #[test]
     fn node_insert_into_empty() {
-        let mut n = Node::new(
-            NodeState::Empty,
-            Pnt2::new(0.0f32, 0.0),
-            10.0f32,
-        );
+        let mut n = Node::empty(Pnt2::new(0.0f32, 0.0), 10.0f32);
         n.insert(Entry { position: Pnt2::new(1.0f32, 0.0), object: 1i });
         match n.state {
             Some(NodeState::Leaf(entry)) => assert_eq!(entry.object, 1),
@@ -210,11 +210,8 @@ mod test {
 
     #[test]
     fn node_insert_into_leaf() {
-        let mut n = Node::new(
-            NodeState::Leaf(Entry {object: 1i, position: Pnt2::new(1.0f64, -2.0)}),
-            Pnt2::new(0.0f64, 0.0),
-            10.0f64,
-        );
+        let mut n = Node::empty(Pnt2::new(0.0f64, 0.0), 10.0f64);
+        n.insert(Entry { object: 1i, position: Pnt2::new(1.0f64, -2.0) });
         n.insert(Entry { object: 2i, position: Pnt2::new(2.0, 1.0) });
         match n.state {
             Some(NodeState::Branch(nodes)) => {
@@ -231,7 +228,7 @@ mod test {
 
     #[test]
     fn node_branch_on_second_insert() {
-        let mut n = Node::new(NodeState::Empty, Pnt2::new(0.0f64, 0.0), 8.0f64);
+        let mut n = Node::empty(Pnt2::new(0.0f64, 0.0), 8.0f64);
         n.insert(Entry { object: 1u, position: Pnt2::new(1.0, 2.0) });
         n.insert(Entry { object: 1u, position: Pnt2::new(2.0, -3.0) });
         match n.state.unwrap() {
