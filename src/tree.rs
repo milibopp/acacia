@@ -1,6 +1,8 @@
-use nalgebra::{Dim, BaseFloat};
+use nalgebra::{Dim, BaseFloat, FloatPnt, FloatVec, zero, POrd};
 use std::num::{Int, cast};
+use std::cmp::partial_max;
 use std::iter::AdditiveIterator;
+use util::limits;
 
 
 pub trait Positionable<P> {
@@ -86,26 +88,45 @@ impl<O, P, N> Node<O, P, N> {
     }
 }
 
-impl<O, P, N> Node<O, P, N>
+impl<O, P, N, V> Node<O, P, N>
     where O: Positionable<P>,
-          P: Dim + Index<uint, N> + IndexMut<uint, N> + Copy,
+          P: FloatPnt<N, V> + Index<uint, N> + IndexMut<uint, N> + Copy + POrd,
+          V: FloatVec<N>,
           N: BaseFloat,
 {
-    pub fn insert(&mut self, entry: O) {
+    pub fn from_vec(vec: Vec<O>) -> Node<O, P, N> {
+        let (inf, sup) = limits(vec.iter().map(|obj| obj.position()));
+        let center = (inf + sup.to_vec()) / cast(2.0f64).unwrap();
+        let extent = range(0, Dim::dim(None::<P>))
+            .fold(zero(), |max, n| partial_max(max, sup[n] - inf[n]).unwrap());
+        let mut tree = Node::empty(center, extent);
+        for object in vec.into_iter() {
+            tree.insert(object)
+        }
+        tree
+    }
+}
+
+impl<O, P, N, V> Node<O, P, N>
+    where O: Positionable<P>,
+          P: FloatPnt<N, V> + Index<uint, N> + IndexMut<uint, N> + Copy,
+          N: BaseFloat,
+{
+    pub fn insert(&mut self, object: O) {
         let tmp = self.state.take().unwrap();
         self.state = Some(match tmp {
-            NodeState::Empty => NodeState::Leaf(entry),
+            NodeState::Empty => NodeState::Leaf(object),
             NodeState::Leaf(other) => {
                 let mut nodes: Vec<Node<O, P, N>> = subdivide(&self.center, &self.extent)
                     .into_iter()
                     .map(|(p, n)| Node::empty(p, n))
                     .collect();
                 nodes[branch_dispatch(&self.center, &other.position())].insert(other);
-                nodes[branch_dispatch(&self.center, &entry.position())].insert(entry);
+                nodes[branch_dispatch(&self.center, &object.position())].insert(object);
                 NodeState::Branch(nodes)
             },
             NodeState::Branch(mut nodes) => {
-                nodes[branch_dispatch(&self.center, &entry.position())].insert(entry);
+                nodes[branch_dispatch(&self.center, &object.position())].insert(object);
                 NodeState::Branch(nodes)
             },
         });
@@ -235,5 +256,45 @@ mod test {
             NodeState::Branch(_) => (),
             _ => panic!("node is no branch"),
         }
+    }
+
+    #[test]
+    fn node_from_empty_vec() {
+        let tree: Node<Entry<uint, Pnt2<f64>>, Pnt2<f64>, f64> =
+            Node::from_vec(vec![]);
+        match tree.state {
+            Some(NodeState::Empty) => (),
+            _ => panic!(),
+        }
+    }
+
+    #[quickcheck]
+    fn node_from_vec_more_than_two_branches(data: Vec<(uint, f64, f64)>) -> bool {
+        let tree = Node::from_vec(
+            data.iter()
+            .map(|&(i, x, y)| Entry { object: i, position: Pnt2::new(x, y) })
+            .collect()
+        );
+        (data.len() >= 2) == (
+            match tree.state {
+                Some(NodeState::Branch(_)) => true,
+                _ => false,
+            }
+        )
+    }
+
+    #[quickcheck]
+    fn node_from_vec_one_is_a_leaf(data: Vec<(uint, f64, f64)>) -> bool {
+        let tree = Node::from_vec(
+            data.iter()
+            .map(|&(i, x, y)| Entry { object: i, position: Pnt2::new(x, y) })
+            .collect()
+        );
+        (data.len() == 1) == (
+            match tree.state {
+                Some(NodeState::Leaf(_)) => true,
+                _ => false,
+            }
+        )
     }
 }

@@ -14,7 +14,7 @@ use nalgebra::{POrd, Orig};
 /// use nalgebra::Pnt2;
 /// use acacia::util::limits;
 /// let points = vec![Pnt2::new(0.0f32, 1.0), Pnt2::new(2.0, -3.0)];
-/// let (inf, sup) = limits(points.iter());
+/// let (inf, sup) = limits(points.into_iter());
 /// # }
 /// ```
 ///
@@ -23,16 +23,16 @@ use nalgebra::{POrd, Orig};
 /// - `values` is a by-reference iterator over points
 ///
 /// TODO: maybe this can be integrated into nalgebra?
-pub fn limits<'a, I, P>(values: I) -> (P, P)
-    where I: Iterator<&'a P>,
-          P: POrd + Orig + Copy + 'a,
+pub fn limits<I, P>(values: I) -> (P, P)
+    where I: Iterator<P>,
+          P: POrd + Orig + Copy,
 {
     let mut values = values;
     match values.next() {
-        Some(&first) => values.fold(
+        Some(first) => values.fold(
             (first, first),
             |(inf, sup), new|
-                (POrd::inf(&inf, new), POrd::sup(&sup, new))
+                (POrd::inf(&inf, &new), POrd::sup(&sup, &new))
         ),
         None => (Orig::orig(), Orig::orig()),
     }
@@ -46,7 +46,7 @@ mod test {
 
     #[test]
     fn limits_no_points() {
-        let (inf, sup): (Pnt3<f64>, Pnt3<f64>) = limits(vec![].iter());
+        let (inf, sup): (Pnt3<f64>, Pnt3<f64>) = limits(vec![].into_iter());
         assert_eq!(inf, Orig::orig());
         assert_eq!(sup, Orig::orig());
     }
@@ -54,7 +54,7 @@ mod test {
     #[test]
     fn limits_one_point() {
         let p = Pnt3::new(1.0f64, 2.0, -3.0);
-        let (inf, sup) = limits(vec![p].iter());
+        let (inf, sup) = limits(vec![p].into_iter());
         assert_eq!(inf, p);
         assert_eq!(sup, p);
     }
@@ -62,21 +62,21 @@ mod test {
     #[quickcheck]
     fn limits_inf_less_than_or_equal_sup(points: Vec<(f32, f32, f32)>) -> bool {
         let points: Vec<Pnt3<f32>> = points.iter().map(|&(x, y, z)| Pnt3::new(x, y, z)).collect();
-        let (inf, sup) = limits(points.iter());
+        let (inf, sup) = limits(points.into_iter());
         POrd::partial_le(&inf, &sup)
     }
 
     #[quickcheck]
     fn limits_inf_less_than_or_equal_all(points: Vec<(f32, f32, f32)>) -> bool {
         let points: Vec<Pnt3<f32>> = points.iter().map(|&(x, y, z)| Pnt3::new(x, y, z)).collect();
-        let (inf, _) = limits(points.iter());
+        let (inf, _) = limits(points.clone().into_iter());
         points.iter().all(|p| POrd::partial_le(&inf, p))
     }
 
     #[quickcheck]
     fn limits_sup_greater_than_or_equal_all(points: Vec<(f32, f32, f32)>) -> bool {
         let points: Vec<Pnt3<f32>> = points.iter().map(|&(x, y, z)| Pnt3::new(x, y, z)).collect();
-        let (_, sup) = limits(points.iter());
+        let (_, sup) = limits(points.clone().into_iter());
         points.iter().all(|p| POrd::partial_ge(&sup, p))
     }
 }
