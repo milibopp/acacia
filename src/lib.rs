@@ -1,4 +1,4 @@
-//! TODO: write crate documentation
+//! A spatial tree library
 
 #![feature(phase)]
 
