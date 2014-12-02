@@ -9,6 +9,7 @@ pub trait Positionable<P> {
     fn position(&self) -> P;
 }
 
+#[deriving(Clone)]
 pub struct Entry<O, P> {
     pub object: O,
     pub position: P,
@@ -192,26 +193,17 @@ impl<O, P, N, D> NodeWithData<O, P, N, D>
 impl<O, P, N, D> NodeWithData<O, P, N, D> {
     pub fn compute<T>(&self, init: T, subdivide: |&P, &N, &D| -> bool, combine: |T, &D| -> T) -> T {
         match self.state {
-            NodeState::Empty => {
-                debug!("empty");
-                init
-            },
-            NodeState::Leaf(_) => {
-                debug!("leaf");
-                combine(init, &self.data)
-            },
-            NodeState::Branch(ref nodes) => {
+            NodeState::Empty => init,
+            NodeState::Leaf(_) => combine(init, &self.data),
+            NodeState::Branch(ref nodes) =>
                 if subdivide(&self.center, &self.extent, &self.data) {
-                    debug!("branch subdivide");
                     nodes.iter().fold(init, |current, node| node.compute(
                         current,
                         |p, n, d| subdivide(p, n, d), |t, d| combine(t, d)
                     ))
                 } else {
-                    debug!("branch stop");
                     combine(init, &self.data)
-                }
-            },
+                },
         }
     }
 }
@@ -220,8 +212,11 @@ impl<O, P, N, D> NodeWithData<O, P, N, D> {
 #[cfg(test)]
 mod test {
     use super::{Node, Entry, NodeState, NodeWithData, subdivide, branch_dispatch};
-    use nalgebra::{ApproxEq, Pnt2, Pnt3, FloatPnt, Vec2, Vec3, zero, Norm, Orig};
     use std::num::Float;
+    use std::rand::distributions::{IndependentSample, Range};
+    use std::rand::task_rng;
+    use test::Bencher;
+    use nalgebra::{ApproxEq, Pnt2, Pnt3, FloatPnt, Vec2, Vec3, zero, Norm, Orig};
     use quickcheck::TestResult;
 
     #[test]
@@ -381,6 +376,39 @@ mod test {
         )
     }
 
+    #[bench]
+    fn quadtree_construction_uniform(b: &mut Bencher) {
+        let coord_dist = Range::new(-1.0f64, 1.0);
+        let mut rng = task_rng();
+        let vec = Vec::from_fn(1000, |_| Entry {
+            object: 1i,
+            position: Pnt2::new(
+                coord_dist.ind_sample(&mut rng),
+                coord_dist.ind_sample(&mut rng)
+            ),
+        });
+        b.iter(|| {
+            Node::from_vec(vec.iter().map(|&a| a.clone()).collect())
+        })
+    }
+
+    #[bench]
+    fn octree_construction_uniform(b: &mut Bencher) {
+        let coord_dist = Range::new(-1.0f64, 1.0);
+        let mut rng = task_rng();
+        let vec = Vec::from_fn(1000, |_| Entry {
+            object: 1i,
+            position: Pnt3::new(
+                coord_dist.ind_sample(&mut rng),
+                coord_dist.ind_sample(&mut rng),
+                coord_dist.ind_sample(&mut rng)
+            ),
+        });
+        b.iter(|| {
+            Node::from_vec(vec.iter().map(|&a| a.clone()).collect())
+        })
+    }
+
     #[quickcheck]
     fn node_with_data_center_of_mass(data: Vec<(f64, f64, f64)>) -> TestResult {
         // Only test non-empty lists with positive masses
@@ -483,10 +511,7 @@ mod test {
                 let delta = FloatPnt::dist(&node_center, &center_of_mass);
                 d < 2.0 * node_size / theta + delta
             },
-            |g, &(com, m)| {
-                debug!("[{}, gravity] {}, {}, {}", (&starfield, test_point_), g, m, com);
-                g + newton((m, com), test_point)
-            },
+            |g, &(com, m)| g + newton((m, com), test_point),
         );
         // Now the tree gravity should approximate the exact one, within 5 %
         TestResult::from_bool(simple_gravity.approx_eq_eps(&tree_gravity, &(0.05 * simple_gravity.norm())))

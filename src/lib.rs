@@ -12,8 +12,8 @@ extern crate quickcheck_macros;
 #[cfg(test)]
 #[phase(plugin)]
 extern crate nalgebra;
-
-#[phase(plugin, link)] extern crate log;
+#[cfg(test)]
+extern crate test;
 
 pub mod tree;
 pub mod util;
