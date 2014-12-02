@@ -97,9 +97,9 @@ impl<O, P, N, V> Node<O, P, N>
 {
     /// Construct a tree without checking the extent of the input data
     ///
-    /// Note: this is prone to crashes! By calling this you effectively assert
-    /// that all objects inserted are within the tree bounds provided.
-    pub unsafe fn from_iter_raw<I: Iterator<O>>(iter: I, center: P, extent: N) -> Node<O, P, N> {
+    /// Note: this is prone to stack overflows! By calling this you effectively
+    /// assert that all positions are within the tree bounds.
+    pub fn from_iter_raw<I: Iterator<O>>(iter: I, center: P, extent: N) -> Node<O, P, N> {
         let mut tree = Node::empty(center, extent);
         let mut iter = iter;
         for object in iter {
@@ -114,9 +114,7 @@ impl<O, P, N, V> Node<O, P, N>
         let center = (inf + sup.to_vec()) / cast(2.0f64).unwrap();
         let extent = range(0, Dim::dim(None::<P>))
             .fold(zero(), |max, n| partial_max(max, sup[n] - inf[n]).unwrap());
-        unsafe {
-            Node::from_iter_raw(vec.into_iter(), center, extent)
-        }
+        Node::from_iter_raw(vec.into_iter(), center, extent)
     }
 
     pub fn from_iter_with_geometry<I: Iterator<O>>(iter: I, center: P, minimal_extent: N) -> Node<O, P, N> {
@@ -131,9 +129,7 @@ impl<O, P, N, V> Node<O, P, N>
                     ).unwrap()
                 ).unwrap()
             );
-        unsafe {
-            Node::from_iter_raw(vec.into_iter(), center, extent)
-        }
+        Node::from_iter_raw(vec.into_iter(), center, extent)
     }
 }
 
@@ -383,6 +379,22 @@ mod test {
                 _ => false,
             }
         )
+    }
+
+    #[bench]
+    fn quadtree_raw_tree_construction_uniform(b: &mut Bencher) {
+        let coord_dist = Range::new(-1.0f64, 1.0);
+        let mut rng = task_rng();
+        let vec = Vec::from_fn(1000, |_| Entry {
+            object: 1i,
+            position: Pnt2::new(
+                coord_dist.ind_sample(&mut rng),
+                coord_dist.ind_sample(&mut rng)
+            ),
+        });
+        b.iter(|| {
+            Node::from_iter_raw(vec.iter().map(|&a| a.clone()), Orig::orig(), 1.0)
+        })
     }
 
     #[bench]
