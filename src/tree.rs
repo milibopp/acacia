@@ -430,6 +430,28 @@ mod test {
         })
     }
 
+    #[bench]
+    fn quadtree_associate_data(b: &mut Bencher) {
+        let coord_dist = Range::new(-1.0f64, 1.0);
+        let mut rng = task_rng();
+        let vec = Vec::from_fn(1000, |_| Entry {
+            object: 1.0,
+            position: Pnt2::new(
+                coord_dist.ind_sample(&mut rng),
+                coord_dist.ind_sample(&mut rng)
+            ),
+        });
+        b.iter(|| {
+            let tree = Node::from_iter(vec.iter().map(|&a| a.clone()));
+            NodeWithData::new(
+                tree,
+                (Vec2::new(0.0f64, 0.0), 0.0f64),
+                |obj| (obj.position.to_vec() * obj.object, obj.object),
+                |&(mps, ms), &(mp, m)| (mps + mp, ms + m)
+            )
+        })
+    }
+
     #[quickcheck]
     fn node_with_data_center_of_mass(data: Vec<(f64, f64, f64)>) -> TestResult {
         // Only test non-empty lists with positive masses
