@@ -95,23 +95,32 @@ impl<O, P, N, V> Node<O, P, N>
           V: FloatVec<N>,
           N: BaseFloat,
 {
-    fn from_vec_internal(vec: Vec<O>, center: P, extent: N) -> Node<O, P, N> {
+    /// Construct a tree without checking the extent of the input data
+    ///
+    /// Note: this is prone to crashes! By calling this you effectively assert
+    /// that all objects inserted are within the tree bounds provided.
+    pub unsafe fn from_iter_raw<I: Iterator<O>>(iter: I, center: P, extent: N) -> Node<O, P, N> {
         let mut tree = Node::empty(center, extent);
-        for object in vec.into_iter() {
+        let mut iter = iter;
+        for object in iter {
             tree.insert(object)
         }
         tree
     }
 
-    pub fn from_vec(vec: Vec<O>) -> Node<O, P, N> {
+    pub fn from_iter<I: Iterator<O>>(iter: I) -> Node<O, P, N> {
+        let vec: Vec<O> = iter.collect();
         let (inf, sup) = limits(vec.iter().map(|obj| obj.position()));
         let center = (inf + sup.to_vec()) / cast(2.0f64).unwrap();
         let extent = range(0, Dim::dim(None::<P>))
             .fold(zero(), |max, n| partial_max(max, sup[n] - inf[n]).unwrap());
-        Node::from_vec_internal(vec, center, extent)
+        unsafe {
+            Node::from_iter_raw(vec.into_iter(), center, extent)
+        }
     }
 
-    pub fn from_vec_with_geometry(vec: Vec<O>, center: P, minimal_extent: N) -> Node<O, P, N> {
+    pub fn from_iter_with_geometry<I: Iterator<O>>(iter: I, center: P, minimal_extent: N) -> Node<O, P, N> {
+        let vec: Vec<O> = iter.collect();
         let (inf, sup) = limits(vec.iter().map(|obj| obj.position()));
         let extent = range(0, Dim::dim(None::<P>))
             .fold(minimal_extent, |max, n|
@@ -122,7 +131,9 @@ impl<O, P, N, V> Node<O, P, N>
                     ).unwrap()
                 ).unwrap()
             );
-        Node::from_vec_internal(vec, center, extent)
+        unsafe {
+            Node::from_iter_raw(vec.into_iter(), center, extent)
+        }
     }
 }
 
@@ -339,7 +350,7 @@ mod test {
     #[test]
     fn node_from_empty_vec() {
         let tree: Node<Entry<uint, Pnt2<f64>>, Pnt2<f64>, f64> =
-            Node::from_vec(vec![]);
+            Node::from_iter(vec![].into_iter());
         match tree.state {
             Some(NodeState::Empty) => (),
             _ => panic!(),
@@ -347,11 +358,10 @@ mod test {
     }
 
     #[quickcheck]
-    fn node_from_vec_more_than_two_branches(data: Vec<(uint, f64, f64)>) -> bool {
-        let tree = Node::from_vec(
+    fn node_from_iter_more_than_two_branches(data: Vec<(uint, f64, f64)>) -> bool {
+        let tree = Node::from_iter(
             data.iter()
             .map(|&(i, x, y)| Entry { object: i, position: Pnt2::new(x, y) })
-            .collect()
         );
         (data.len() >= 2) == (
             match tree.state {
@@ -362,11 +372,10 @@ mod test {
     }
 
     #[quickcheck]
-    fn node_from_vec_one_is_a_leaf(data: Vec<(uint, f64, f64)>) -> bool {
-        let tree = Node::from_vec(
+    fn node_from_iter_one_is_a_leaf(data: Vec<(uint, f64, f64)>) -> bool {
+        let tree = Node::from_iter(
             data.iter()
             .map(|&(i, x, y)| Entry { object: i, position: Pnt2::new(x, y) })
-            .collect()
         );
         (data.len() == 1) == (
             match tree.state {
@@ -388,7 +397,7 @@ mod test {
             ),
         });
         b.iter(|| {
-            Node::from_vec(vec.iter().map(|&a| a.clone()).collect())
+            Node::from_iter(vec.iter().map(|&a| a.clone()))
         })
     }
 
@@ -405,7 +414,7 @@ mod test {
             ),
         });
         b.iter(|| {
-            Node::from_vec(vec.iter().map(|&a| a.clone()).collect())
+            Node::from_iter(vec.iter().map(|&a| a.clone()))
         })
     }
 
@@ -421,10 +430,9 @@ mod test {
             .fold((zero::<Vec2<f64>>(), 0.0f64), |(mps, ms), (mp, m)| (mps + mp, ms + m));
         let com = mps / ms;
         // Now use the tree
-        let tree = Node::from_vec(
+        let tree = Node::from_iter(
             data.iter()
             .map(|&(m, x, y)| Entry { object: m, position: Pnt2::new(x, y) })
-            .collect()
         );
         let assoc_tree = NodeWithData::new(
             tree,
@@ -483,10 +491,9 @@ mod test {
             .fold(zero(), |a: Vec3<_>, b| a + b);
         // Calculate gravity using a tree
         let orig: Pnt3<f64> = Orig::orig();
-        let tree = Node::from_vec_with_geometry(
+        let tree = Node::from_iter_with_geometry(
             starfield.iter()
-            .map(|&(m, (x, y, z))| Entry { object: m, position: Pnt3::new(x, y, z) })
-            .collect(),
+            .map(|&(m, (x, y, z))| Entry { object: m, position: Pnt3::new(x, y, z) }),
             orig,
             test_point.as_vec().norm()
         );
