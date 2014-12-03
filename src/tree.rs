@@ -200,17 +200,12 @@ impl<O, P, N, D> NodeWithData<O, P, N, D>
 impl<O, P, N, D> NodeWithData<O, P, N, D> {
     pub fn compute<T>(&self, init: T, subdivide: |&P, &N, &D| -> bool, combine: |T, &D| -> T) -> T {
         match self.state {
-            NodeState::Empty => init,
-            NodeState::Leaf(_) => combine(init, &self.data),
-            NodeState::Branch(ref nodes) =>
-                if subdivide(&self.center, &self.extent, &self.data) {
-                    nodes.iter().fold(init, |current, node| node.compute(
-                        current,
-                        |p, n, d| subdivide(p, n, d), |t, d| combine(t, d)
-                    ))
-                } else {
-                    combine(init, &self.data)
-                },
+            NodeState::Branch(ref nodes) if subdivide(&self.center, &self.extent, &self.data)
+                => nodes.iter().fold(init, |current, node| node.compute(
+                    current,
+                    |p, n, d| subdivide(p, n, d), |t, d| combine(t, d)
+                )),
+            _ => combine(init, &self.data),
         }
     }
 }
