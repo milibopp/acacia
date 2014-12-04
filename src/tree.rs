@@ -142,30 +142,32 @@ trait TreeWalk<P, N, O, D, I>: Tree<P, N, O, D> {
 
 /// Subdivision helper function
 ///
-/// Given the center of a node and its extent, this function generates a vector
+/// Given the center of a node and its width, this function generates a vector
 /// of empty nodes equally partitioning the given node geometry. This is generic
 /// over the dimension of the point type.
 ///
 /// # Params
 /// - The `old_center` is the center point of the (old) node.
-/// - The `old_extent` is its extent.
-fn subdivide<P, N>(old_center: &P, old_extent: &N) -> Vec<(P, N)>
+/// - The `old_width` is its width.
+fn subdivide<P, N>(old_center: &P, old_width: &N) -> Vec<(P, N)>
     where P: Dim + Index<uint, N> + IndexMut<uint, N> + Copy,
           N: BaseFloat,
 {
+    let _2 = cast(2.0f64).unwrap();
     let dim = Dim::dim(None::<P>);
-    let new_extent = *old_extent / cast(2.0f64).unwrap();
+    let new_width = *old_width / _2;
     range(0u, 2.pow(dim))
         .map(|n| {
             let mut new_center = *old_center;
+            let dx = new_width / _2;
             for i in range(0, dim) {
                 new_center[i] = new_center[i] + match n / 2.pow(i) % 2 {
-                    0 => -new_extent,
-                    1 => new_extent,
+                    0 => -dx,
+                    1 => dx,
                     _ => unreachable!(),
                 };
             }
-            (new_center, new_extent)
+            (new_center, new_width)
         })
         .collect()
 }
@@ -192,15 +194,15 @@ enum NodeState<O, N> {
 pub struct Node<O, P, N> {
     state: Option<NodeState<O, Node<O, P, N>>>,
     center: P,
-    extent: N,
+    width: N,
 }
 
 impl<O, P, N> Node<O, P, N> {
-    pub fn empty(center: P, extent: N) -> Node<O, P, N> {
+    pub fn empty(center: P, width: N) -> Node<O, P, N> {
         Node {
             state: Some(NodeState::Empty),
             center: center,
-            extent: extent,
+            width: width,
         }
     }
 }
@@ -211,12 +213,12 @@ impl<O, P, N, V> Node<O, P, N>
           V: FloatVec<N>,
           N: BaseFloat,
 {
-    /// Construct a tree without checking the extent of the input data
+    /// Construct a tree without checking the geometry of the input data
     ///
     /// Note: this is prone to stack overflows! By calling this you effectively
     /// assert that all positions are within the tree bounds.
-    pub fn from_iter_raw<I: Iterator<O>>(iter: I, center: P, extent: N) -> Node<O, P, N> {
-        let mut tree = Node::empty(center, extent);
+    pub fn from_iter_raw<I: Iterator<O>>(iter: I, center: P, width: N) -> Node<O, P, N> {
+        let mut tree = Node::empty(center, width);
         let mut iter = iter;
         for object in iter {
             tree.insert(object)
@@ -225,19 +227,21 @@ impl<O, P, N, V> Node<O, P, N>
     }
 
     pub fn from_iter<I: Iterator<O>>(iter: I) -> Node<O, P, N> {
+        let _2: N = cast(2.0f64).unwrap();
         let vec: Vec<O> = iter.collect();
         let (inf, sup) = limits(vec.iter().map(|obj| obj.position()));
         let center = (inf + sup.to_vec()) / cast(2.0f64).unwrap();
-        let extent = range(0, Dim::dim(None::<P>))
+        let width = _2 * range(0, Dim::dim(None::<P>))
             .fold(zero(), |max, n| partial_max(max, sup[n] - inf[n]).unwrap());
-        Node::from_iter_raw(vec.into_iter(), center, extent)
+        Node::from_iter_raw(vec.into_iter(), center, width)
     }
 
-    pub fn from_iter_with_geometry<I: Iterator<O>>(iter: I, center: P, minimal_extent: N) -> Node<O, P, N> {
+    pub fn from_iter_with_geometry<I: Iterator<O>>(iter: I, center: P, minimal_width: N) -> Node<O, P, N> {
+        let _2: N = cast(2.0f64).unwrap();
         let vec: Vec<O> = iter.collect();
         let (inf, sup) = limits(vec.iter().map(|obj| obj.position()));
-        let extent = range(0, Dim::dim(None::<P>))
-            .fold(minimal_extent, |max, n|
+        let width = _2 * range(0, Dim::dim(None::<P>))
+            .fold(minimal_width, |max, n|
                 partial_max(
                     max, partial_max(
                         (center[n] - sup[n]).abs(),
@@ -245,7 +249,7 @@ impl<O, P, N, V> Node<O, P, N>
                     ).unwrap()
                 ).unwrap()
             );
-        Node::from_iter_raw(vec.into_iter(), center, extent)
+        Node::from_iter_raw(vec.into_iter(), center, width)
     }
 }
 
@@ -259,7 +263,7 @@ impl<O, P, N, V> Node<O, P, N>
         self.state = Some(match tmp {
             NodeState::Empty => NodeState::Leaf(object),
             NodeState::Leaf(other) => {
-                let mut nodes: Vec<Node<O, P, N>> = subdivide(&self.center, &self.extent)
+                let mut nodes: Vec<Node<O, P, N>> = subdivide(&self.center, &self.width)
                     .into_iter()
                     .map(|(p, n)| Node::empty(p, n))
                     .collect();
@@ -279,7 +283,7 @@ impl<O, P, N, V> Node<O, P, N>
 pub struct NodeWithData<O, P, N, D> {
     state: NodeState<O, NodeWithData<O, P, N, D>>,
     center: P,
-    extent: N,
+    width: N,
     data: D,
 }
 
@@ -287,7 +291,7 @@ impl<O, P, N, D> NodeWithData<O, P, N, D>
     where D: Clone
 {
     pub fn new(node: Node<O, P, N>, default: D, single: |&O| -> D, combine: |&D, &D| -> D) -> NodeWithData<O, P, N, D> {
-        let (center, extent) = (node.center, node.extent);
+        let (center, width) = (node.center, node.width);
         let (state, data) = match node.state.unwrap() {
             NodeState::Empty => (NodeState::Empty, default),
             NodeState::Leaf(obj) => {
@@ -307,7 +311,7 @@ impl<O, P, N, D> NodeWithData<O, P, N, D>
         NodeWithData {
             state: state,
             center: center,
-            extent: extent,
+            width: width,
             data: data,
         }
     }
@@ -316,7 +320,7 @@ impl<O, P, N, D> NodeWithData<O, P, N, D>
 impl<O, P, N, D> NodeWithData<O, P, N, D> {
     pub fn compute<T>(&self, init: T, subdivide: |&P, &N, &D| -> bool, combine: |T, &D| -> T) -> T {
         match self.state {
-            NodeState::Branch(ref nodes) if subdivide(&self.center, &self.extent, &self.data)
+            NodeState::Branch(ref nodes) if subdivide(&self.center, &self.width, &self.data)
                 => nodes.iter().fold(init, |current, node| node.compute(
                     current,
                     |p, n, d| subdivide(p, n, d), |t, d| combine(t, d)
@@ -350,22 +354,22 @@ mod test {
     }
 
     #[quickcheck]
-    fn subdivide_new_extents_half_width((x, y, ext): (f64, f64, f64)) -> bool {
-        let new_coords = subdivide(&Pnt2::new(x, y), &ext);
-        new_coords.iter().all(|&(_, new_ext)|
-            new_ext == ext / 2.0
+    fn subdivide_new_width_half((x, y, width): (f64, f64, f64)) -> bool {
+        let new_coords = subdivide(&Pnt2::new(x, y), &width);
+        new_coords.iter().all(|&(_, new_width)|
+            new_width == width / 2.0
         )
     }
 
     #[quickcheck]
-    fn subdivide_new_centers_dist((x, y, ext): (f64, f64, f64)) -> TestResult {
-        if ext > 0.0 {
+    fn subdivide_new_centers_dist((x, y, width): (f64, f64, f64)) -> TestResult {
+        if width > 0.0 {
             let center = Pnt2::new(x, y);
-            let new_coords = subdivide(&center, &ext);
+            let new_coords = subdivide(&center, &width);
             TestResult::from_bool(new_coords.iter().all(|&(new_center, _)| {
                 ApproxEq::approx_eq(
                     &FloatPnt::dist(&new_center, &center),
-                    &(ext * 2.0.sqrt() / 2.0)
+                    &(width * 2.0.powf(-1.5))
                 )
             }))
         } else {
@@ -388,30 +392,30 @@ mod test {
     #[test]
     fn branch_dispatch_cases_2d() {
         let center = Pnt2::new(0.0f64, 0.0);
-        let ext = 10.0f64;
-        let subs = subdivide(&center, &ext);
+        let width = 10.0f64;
+        let subs = subdivide(&center, &width);
         assert_eq!(
-            subs[branch_dispatch(&center, &Pnt2::new(2.0, 2.0))].0,
-            Pnt2::new(5.0, 5.0)
+            subs[branch_dispatch(&center, &Pnt2::new(2.0, 4.0))].0,
+            Pnt2::new(2.5, 2.5)
         );
         assert_eq!(
-            subs[branch_dispatch(&center, &Pnt2::new(-2.0, 2.0))].0,
-            Pnt2::new(-5.0, 5.0)
+            subs[branch_dispatch(&center, &Pnt2::new(-1.0, 2.0))].0,
+            Pnt2::new(-2.5, 2.5)
         );
     }
 
     #[test]
     fn branch_dispatch_cases_3d() {
         let center = Pnt3::new(0.0f64, 0.0, 0.0);
-        let ext = 8.0f64;
-        let subs = subdivide(&center, &ext);
+        let width = 8.0f64;
+        let subs = subdivide(&center, &width);
         assert_eq!(
             subs[branch_dispatch(&center, &Pnt3::new(3.0, 1.0, -1.2))].0,
-            Pnt3::new(4.0, 4.0, -4.0)
+            Pnt3::new(2.0, 2.0, -2.0)
         );
         assert_eq!(
             subs[branch_dispatch(&center, &Pnt3::new(-2.0, 2.0, -0.1))].0,
-            Pnt3::new(-4.0, 4.0, -4.0)
+            Pnt3::new(-2.0, 2.0, -2.0)
         );
     }
 
@@ -661,7 +665,7 @@ mod test {
             |&node_center, &node_size, &(center_of_mass, _)| {
                 let d = FloatPnt::dist(&test_point, &center_of_mass);
                 let delta = FloatPnt::dist(&node_center, &center_of_mass);
-                d < 2.0 * node_size / theta + delta
+                d < node_size / theta + delta
             },
             |g, &(com, m)| g + newton((m, com), test_point),
         );
