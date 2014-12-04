@@ -1,18 +1,22 @@
-`acacia` is my attempt at writing a generic spatial tree library including
-binary trees, quadtrees, octrees and so on. The idea is to associate a generic
-data field to each node to be computed using a suitable closure. One can then
-pass arbitrary computational queries to the tree.
+*acacia* is a spatial tree library written in Rust. It is generic over the
+dimension of the partitioned space and thus supports binary trees, quadtrees,
+octrees, etc. The intended goal is to implement these features as fast and
+covering as many use cases as possible without sacrificing abstraction.
 
-This also allows reusing the same tree structure for different queries without
-mixing their implementation within the same type.
-
-The current state of the project is very experimental. It works, as the tests
-indicate, but I intend to change both the API and the internals significantly
-to improve on design and performance. There is also no documentation at the
-moment.
+The current state of the project is very experimental. It works and has ample
+test coverage, but both the API and the internals will likely change in the
+future to improve interface and performance.
 
 
-# License
+## Features
+
+- Tree construction from a simple iterator.
+- Associate data to a tree during construction using closures.
+- Arbitrary computational queries can be performed on the trees.
+- Faster dimension-specific trees, e.g. an octree (not yet implemented)
+
+
+## License
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
