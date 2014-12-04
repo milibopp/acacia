@@ -25,21 +25,15 @@ impl<O, P> Positionable<P> for Entry<O, P>
 }
 
 
-/// A generic spatial tree
+/// A tree which allows recursive queries on its associated data
 ///
-/// This trait wraps up the properties of a tree. Most prominently a tree must
-/// support recursive computational queries on its structure. Closures are used
-/// to determine the recursion behavior and what is to be computed.
+/// Closures are used to determine the recursion behavior and what is to be
+/// computed.
 ///
 /// # Type parameters
 ///
-/// - `P` is the kind of point used to position objects and nodes spatially.
-/// - `N` is the scalar of the vector space of points.
-/// - The tree stores objects of type `O`. These objects need to have some
-///   notion of a position.
-/// - `D` is the kind of data associated with each node. This is computed
-///   recursively during tree construction.
-pub trait Tree<P, N, O, D> {
+/// - `D` is the type of the associated data.
+pub trait DataQuery<D> {
 
     /// Compute a query on the associated data using a mutable accumulator
     ///
@@ -48,19 +42,17 @@ pub trait Tree<P, N, O, D> {
     ///
     /// If an empty or leaf node is encountered, `combine` is called on the
     /// accumulator and its associated data. For a branching node `recurse` is
-    /// called on its center, width and associated data, to determine whether
-    /// its subnodes should be inspected more closely. If so, the function
-    /// recurses on each subnode, otherwise it acts on it as if it were not a
-    /// branch.
+    /// called on it, to determine whether its subnodes should be inspected more
+    /// closely. If so, the function recurses on each subnode, otherwise it acts
+    /// on it as if it were not a branch.
     ///
     /// # Parameters
     ///
     /// - The `accumulator` is a mutable reference to some data, that is
     ///   modified during the query to collect.
-    /// - At each node the tree is only recursed further, if
-    ///   `recurse(&node.center, &node.width, &node.data)`.
+    /// - At each node the tree is only recursed further, iff `recurse(&node)`.
     /// - `combine` is called for every node whose data is to be considered.
-    fn query_data_mut<T>(&self, accumulator: &mut T, recurse: |&P, &N, &D| -> bool, combine: |&mut T, &D|);
+    fn query_data_mut<T>(&self, accumulator: &mut T, recurse: |&Self| -> bool, combine: |&mut T, &D|);
 
     /// Compute a query on the associated data using an initial state
     ///
@@ -68,33 +60,48 @@ pub trait Tree<P, N, O, D> {
     /// implementation using it. The difference is, that an initial value is
     /// moved into the function and used to initialize the accumulator. Its
     /// final state is the method's return value.
-    fn query_data<T>(&self, initial: T, recurse: |&P, &N, &D| -> bool, combine: |&T, &D| -> T) -> T {
+    fn query_data<T>(&self, initial: T, recurse: |&Self| -> bool, combine: |&T, &D| -> T) -> T {
         let mut acc = initial;
         self.query_data_mut(
             &mut acc,
-            |ctr, width, data| recurse(ctr, width, data),
+            |node| recurse(node),
             |a, d| {*a = combine(a, d);}
         );
         acc
     }
+}
+
+
+/// A tree that allows recursive queries on its objects
+///
+/// Closures are used to determine the recursion behavior and what is to be
+/// computed.
+///
+/// TODO: do not mention DataQuery methods in documentation, to make this
+/// self-contained
+///
+/// # Type parameters
+///
+/// - `O` is the type of the objects stored in the tree.
+pub trait ObjectQuery<O> {
 
     /// Compute a query on the objects using an accumulator
     ///
     /// This method walks through the tree similar to `query_data_mut`. However,
     /// the `combine` closure is only invoked, when a leaf node is encountered.
-    /// It recurses on branch nodes if `recurse(...)`. Empty nodes are
-    /// ignored.
-    fn query_objects_mut<T>(&self, accumulator: &mut T, recurse: |&P, &N, &D| -> bool, combine: |&mut T, &O|);
+    /// `recurse` determines if it recurses into branch nodes more deeply. Empty
+    /// nodes are ignored.
+    fn query_objects_mut<T>(&self, accumulator: &mut T, recurse: |&Self| -> bool, combine: |&mut T, &O|);
 
     /// Compute a query on the objects using an initial state
     ///
     /// This relates to `query_objects_mut` in the same way `query_data` relates
     /// to `query_data_mut`.
-    fn query_objects<T>(&self, initial: T, recurse: |&P, &N, &D| -> bool, combine: |&T, &O| -> T) -> T {
+    fn query_objects<T>(&self, initial: T, recurse: |&Self| -> bool, combine: |&T, &O| -> T) -> T {
         let mut acc = initial;
         self.query_objects_mut(
             &mut acc,
-            |ctr, width, data| recurse(ctr, width, data),
+            |node| recurse(node),
             |a, o| {*a = combine(a, o);}
         );
         acc
@@ -102,7 +109,7 @@ pub trait Tree<P, N, O, D> {
 }
 
 
-/// A node in a tree
+/// A tree node
 ///
 /// This is part of the essential features of a tree. Note that both a whole
 /// tree and its constituents implement this.
@@ -112,10 +119,40 @@ pub trait Node<P, N, O> {
     fn width(&self) -> &N;
 }
 
-/// A node which has data associated with it
+
+/// A tree with associated data
 pub trait AssociatedData<D> {
     fn data(&self) -> &D;
 }
+
+
+/// A pure spatial tree
+///
+/// This trait wraps up the properties of a tree that contains only spatial
+/// information, but no associated data.
+///
+/// # Type parameters
+///
+/// - `P` is the kind of point used to position objects and nodes spatially.
+/// - `N` is the scalar of the vector space of points.
+/// - The tree stores objects of type `O`. These objects need to have some
+///   notion of a position.
+pub trait PureTree<P, N, O>: ObjectQuery<O> + Node<P, N, O> {}
+
+
+/// A spatial tree with associated data
+///
+/// This trait wraps up the properties of a tree that contains associated data.
+///
+/// # Type parameters
+///
+/// - `P` is the kind of point used to position objects and nodes spatially.
+/// - `N` is the scalar of the vector space of points.
+/// - The tree stores objects of type `O`. These objects need to have some
+///   notion of a position.
+/// - `D` is the kind of data associated with each node. This is computed
+///   recursively during tree construction.
+pub trait Tree<P, N, O, D>: DataQuery<D> + AssociatedData<D> + PureTree<P, N, O> {}
 
 
 /// Subdivision helper function
@@ -263,7 +300,6 @@ impl<O, P, N, V> PureNTree<O, P, N>
 ///
 /// This tree does not know the dimension of its point at compile time, as it is
 /// not hard-coded and genericity over constants is unsupported in Rust.
-///
 pub struct NTree<P, N, O, D> {
     state: NodeState<O, NTree<P, N, O, D>>,
     center: P,
@@ -427,22 +463,24 @@ impl<P, N, O, D> AssociatedData<D> for NTree<P, N, O, D> {
     }
 }
 
-impl<P, N, O, D> Tree<P, N, O, D> for NTree<P, N, O, D> {
-    fn query_data_mut<T>(&self, acc: &mut T, recurse: |&P, &N, &D| -> bool, combine: |&mut T, &D|) {
+impl<P, N, O, D> DataQuery<D> for NTree<P, N, O, D> {
+    fn query_data_mut<T>(&self, acc: &mut T, recurse: |&NTree<P, N, O, D>| -> bool, combine: |&mut T, &D|) {
         match self.state {
-            NodeState::Branch(ref nodes) if recurse(&self.center, &self.width, &self.data) =>
+            NodeState::Branch(ref nodes) if recurse(self) =>
                 for node in nodes.iter() {
-                    node.query_data_mut(acc, |p, n, d| recurse(p, n, d), |t, d| combine(t, d))
+                    node.query_data_mut(acc, |n| recurse(n), |t, d| combine(t, d))
                 },
             _ => combine(acc, &self.data),
         }
     }
+}
 
-    fn query_objects_mut<T>(&self, acc: &mut T, recurse: |&P, &N, &D| -> bool, combine: |&mut T, &O|) {
+impl<P, N, O, D> ObjectQuery<O> for NTree<P, N, O, D> {
+    fn query_objects_mut<T>(&self, acc: &mut T, recurse: |&NTree<P, N, O, D>| -> bool, combine: |&mut T, &O|) {
         match self.state {
-            NodeState::Branch(ref nodes) if recurse(&self.center, &self.width, &self.data) =>
+            NodeState::Branch(ref nodes) if recurse(self) =>
                 for node in nodes.iter() {
-                    node.query_objects_mut(acc, |p, n, d| recurse(p, n, d), |t, o| combine(t, o))
+                    node.query_objects_mut(acc, |n| recurse(n), |t, o| combine(t, o))
                 },
             NodeState::Leaf(ref obj) => combine(acc, obj),
             _ => (),
@@ -453,7 +491,7 @@ impl<P, N, O, D> Tree<P, N, O, D> for NTree<P, N, O, D> {
 
 #[cfg(test)]
 mod test {
-    use super::{Entry, NodeState, NTree, Tree, subdivide, branch_dispatch};
+    use super::{Entry, NodeState, NTree, Node, AssociatedData, DataQuery, subdivide, branch_dispatch};
     use std::num::Float;
     use std::rand::distributions::{IndependentSample, Range};
     use std::rand::task_rng;
@@ -803,10 +841,11 @@ mod test {
         let mut tree_gravity: Vec3<_> = zero();
         tree.query_data_mut(
             &mut tree_gravity,
-            |&node_center, &node_size, &(center_of_mass, _)| {
-                let d = FloatPnt::dist(&test_point, &center_of_mass);
-                let delta = FloatPnt::dist(&node_center, &center_of_mass);
-                d < node_size / theta + delta
+            |node| {
+                let &(ref center_of_mass, _) = node.data();
+                let d = FloatPnt::dist(&test_point, center_of_mass);
+                let delta = FloatPnt::dist(node.center(), center_of_mass);
+                d < *node.width() / theta + delta
             },
             |g, &(com, m)| {
                 *g = *g + newton((m, com), test_point);
