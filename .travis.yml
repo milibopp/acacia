@@ -1,1 +1,15 @@
 language: rust
+
+env:
+    global:
+        - secure: ct0uZCJyDlBiSTS/sOT2CS9KEV4wZxW4/rl/SL0ak2cVgzjl9XC0265krKuMVVdrxXvjSZ2WuQErp+ZLWE4KA/N3PbcyX+5pUiTAiyVJ01T4WRDS5eCymPxGcnGO1TejGqSpWsPGo84cX5VMxFwWjYng8tzu6VHtw95H1lzjycI=
+    script:
+        - cargo build
+        - cargo test
+        - cargo bench
+        - cargo doc
+
+after_script:
+    # the doc directory needs to be in the root for rust-ci
+    - mv target/doc doc
+    - curl http://www.rust-ci.org/artifacts/put?t=$RUSTCI_TOKEN | sh
