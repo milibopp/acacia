@@ -2,6 +2,7 @@
 
 #![feature(phase)]
 
+
 extern crate nalgebra;
 
 #[cfg(test)]
@@ -15,6 +16,8 @@ extern crate nalgebra;
 #[cfg(test)]
 extern crate test;
 
+#[warn(missing_docs)]
 pub mod ntree;
+#[warn(missing_docs)]
 pub mod tree;
 pub mod util;
