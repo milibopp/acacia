@@ -1,3 +1,5 @@
+//! Dimension-unspecific tree implementations
+
 use nalgebra::{Dim, BaseFloat, FloatPnt, FloatVec, zero, POrd};
 use std::num::{Float, Int, cast};
 use std::cmp::partial_max;
@@ -53,6 +55,8 @@ fn branch_dispatch<P, N>(center: &P, point: &P) -> uint
 }
 
 
+
+/// A pure N-dimensional tree
 pub struct PureNTree<P, N, O> {
     state: NodeState<O, PureNTree<P, N, O>>,
     center: P,
@@ -88,6 +92,7 @@ impl<P, N, O, V> PureNTree<P, N, O>
         tree
     }
 
+    /// Construct a pure tree from an iterator
     pub fn from_iter<I: Iterator<O>>(iter: I) -> PureNTree<P, N, O> {
         let _2: N = cast(2.0f64).unwrap();
         let vec: Vec<O> = iter.collect();
@@ -98,6 +103,7 @@ impl<P, N, O, V> PureNTree<P, N, O>
         PureNTree::from_iter_raw(vec.into_iter(), center, width)
     }
 
+    /// Construct a pure tree from an iterator with geometric constraints
     pub fn from_iter_with_geometry<I: Iterator<O>>(iter: I, center: P, minimal_width: N) -> PureNTree<P, N, O> {
         let _2: N = cast(2.0f64).unwrap();
         let vec: Vec<O> = iter.collect();
