@@ -102,6 +102,22 @@ pub trait Tree<P, N, O, D> {
 }
 
 
+/// A node in a tree
+///
+/// This is part of the essential features of a tree. Note that both a whole
+/// tree and its constituents implement this.
+pub trait Node<P, N, O> {
+    fn state(&self) -> &NodeState<O, Self>;
+    fn center(&self) -> &P;
+    fn width(&self) -> &N;
+}
+
+/// A node which has data associated with it
+pub trait AssociatedData<D> {
+    fn data(&self) -> &D;
+}
+
+
 /// Subdivision helper function
 ///
 /// Given the center of a node and its width, this function generates a vector
@@ -146,22 +162,23 @@ fn branch_dispatch<P, N>(center: &P, point: &P) -> uint
 }
 
 
-enum NodeState<O, N> {
+pub enum NodeState<O, N> {
     Empty,
     Leaf(O),
     Branch(Vec<N>),
 }
 
 
-pub struct Node<O, P, N> {
-    state: Option<NodeState<O, Node<O, P, N>>>,
+#[unstable="must be refactored to implement the new traits"]
+pub struct PureNTree<O, P, N> {
+    state: Option<NodeState<O, PureNTree<O, P, N>>>,
     center: P,
     width: N,
 }
 
-impl<O, P, N> Node<O, P, N> {
-    pub fn empty(center: P, width: N) -> Node<O, P, N> {
-        Node {
+impl<O, P, N> PureNTree<O, P, N> {
+    pub fn empty(center: P, width: N) -> PureNTree<O, P, N> {
+        PureNTree {
             state: Some(NodeState::Empty),
             center: center,
             width: width,
@@ -169,7 +186,7 @@ impl<O, P, N> Node<O, P, N> {
     }
 }
 
-impl<O, P, N, V> Node<O, P, N>
+impl<O, P, N, V> PureNTree<O, P, N>
     where O: Positionable<P>,
           P: FloatPnt<N, V> + Index<uint, N> + IndexMut<uint, N> + Copy + POrd,
           V: FloatVec<N>,
@@ -179,8 +196,8 @@ impl<O, P, N, V> Node<O, P, N>
     ///
     /// Note: this is prone to stack overflows! By calling this you effectively
     /// assert that all positions are within the tree bounds.
-    pub fn from_iter_raw<I: Iterator<O>>(iter: I, center: P, width: N) -> Node<O, P, N> {
-        let mut tree = Node::empty(center, width);
+    pub fn from_iter_raw<I: Iterator<O>>(iter: I, center: P, width: N) -> PureNTree<O, P, N> {
+        let mut tree = PureNTree::empty(center, width);
         let mut iter = iter;
         for object in iter {
             tree.insert(object)
@@ -188,17 +205,17 @@ impl<O, P, N, V> Node<O, P, N>
         tree
     }
 
-    pub fn from_iter<I: Iterator<O>>(iter: I) -> Node<O, P, N> {
+    pub fn from_iter<I: Iterator<O>>(iter: I) -> PureNTree<O, P, N> {
         let _2: N = cast(2.0f64).unwrap();
         let vec: Vec<O> = iter.collect();
         let (inf, sup) = limits(vec.iter().map(|obj| obj.position()));
         let center = (inf + sup.to_vec()) / cast(2.0f64).unwrap();
         let width = _2 * range(0, Dim::dim(None::<P>))
             .fold(zero(), |max, n| partial_max(max, sup[n] - inf[n]).unwrap());
-        Node::from_iter_raw(vec.into_iter(), center, width)
+        PureNTree::from_iter_raw(vec.into_iter(), center, width)
     }
 
-    pub fn from_iter_with_geometry<I: Iterator<O>>(iter: I, center: P, minimal_width: N) -> Node<O, P, N> {
+    pub fn from_iter_with_geometry<I: Iterator<O>>(iter: I, center: P, minimal_width: N) -> PureNTree<O, P, N> {
         let _2: N = cast(2.0f64).unwrap();
         let vec: Vec<O> = iter.collect();
         let (inf, sup) = limits(vec.iter().map(|obj| obj.position()));
@@ -211,11 +228,11 @@ impl<O, P, N, V> Node<O, P, N>
                     ).unwrap()
                 ).unwrap()
             );
-        Node::from_iter_raw(vec.into_iter(), center, width)
+        PureNTree::from_iter_raw(vec.into_iter(), center, width)
     }
 }
 
-impl<O, P, N, V> Node<O, P, N>
+impl<O, P, N, V> PureNTree<O, P, N>
     where O: Positionable<P>,
           P: FloatPnt<N, V> + Index<uint, N> + IndexMut<uint, N> + Copy,
           N: BaseFloat,
@@ -225,9 +242,9 @@ impl<O, P, N, V> Node<O, P, N>
         self.state = Some(match tmp {
             NodeState::Empty => NodeState::Leaf(object),
             NodeState::Leaf(other) => {
-                let mut nodes: Vec<Node<O, P, N>> = subdivide(&self.center, &self.width)
+                let mut nodes: Vec<PureNTree<O, P, N>> = subdivide(&self.center, &self.width)
                     .into_iter()
-                    .map(|(p, n)| Node::empty(p, n))
+                    .map(|(p, n)| PureNTree::empty(p, n))
                     .collect();
                 nodes[branch_dispatch(&self.center, &other.position())].insert(other);
                 nodes[branch_dispatch(&self.center, &object.position())].insert(object);
@@ -387,6 +404,26 @@ impl<P, N, O, D, V> NTree<P, N, O, D>
                 ).unwrap()
             );
         NTree::from_iter_raw(vec.into_iter(), center, width, default, |o| single(o), |d1, d2| combine(d1, d2))
+    }
+}
+
+impl<P, N, O, D> Node<P, N, O> for NTree<P, N, O, D> {
+    fn state(&self) -> &NodeState<O, NTree<P, N, O, D>> {
+        &self.state
+    }
+
+    fn center(&self) -> &P {
+        &self.center
+    }
+
+    fn width(&self) -> &N {
+        &self.width
+    }
+}
+
+impl<P, N, O, D> AssociatedData<D> for NTree<P, N, O, D> {
+    fn data(&self) -> &D {
+        &self.data
     }
 }
 
