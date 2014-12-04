@@ -15,5 +15,6 @@ extern crate nalgebra;
 #[cfg(test)]
 extern crate test;
 
+pub mod ntree;
 pub mod tree;
 pub mod util;
