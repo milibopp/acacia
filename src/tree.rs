@@ -25,9 +25,11 @@ impl<O, P> Positionable<P> for Entry<O, P>
 }
 
 
-/// Abstract definition of a tree
+/// A generic spatial tree
 ///
-/// TODO: add some more detailed description.
+/// This trait wraps up the properties of a tree. Most prominently a tree must
+/// support recursive computational queries on its structure. Closures are used
+/// to determine the recursion behavior and what is to be computed.
 ///
 /// # Type parameters
 ///
@@ -38,47 +40,6 @@ impl<O, P> Positionable<P> for Entry<O, P>
 /// - `D` is the kind of data associated with each node. This is computed
 ///   recursively during tree construction.
 pub trait Tree<P, N, O, D> {
-
-    /// Construct a tree from an iterator
-    ///
-    /// The center and width of the root node should be determined automatically
-    /// from the structure of the objects provided by the iterator.
-    ///
-    /// # Parameters
-    ///
-    /// - `objects` is an iterator over the objects that should comprise the
-    ///   tree.
-    /// - The `default` value is the associated data of an empty node.
-    /// - A terminal leaf will be associated with data using the `single`
-    ///   closure.
-    /// - More complex structures will combine their constituent data by
-    ///   subsequent invokations of the `combine` function as an operator.
-    fn from_iter<I: Iterator<O>>(
-            objects: I, default: D, single: |&O| -> D, combine: |&D, &D| -> D)
-        -> Self;
-
-    /// Same as `from_iter` but with geometrical constraints
-    ///
-    /// # Parameters
-    ///
-    /// - `objects`, `default`, `single`, `combine` are the same as in
-    ///   `from_iter`.
-    /// - `center` will be the center of the tree.
-    /// - `minimal_width` is the minimal width of the root node of the tree.
-    ///   This may be increased by the geometrical requirements of the objects,
-    ///   thus only a lower bound on the width can be imposed on the tree.
-    fn from_iter_with_geometry<I: Iterator<O>>(
-            objects: I, center: P, minimal_width: N, default: D,
-            single: |&O| -> D, combine: |&D, &D| -> D)
-        -> Self;
-}
-
-
-/// Queries on a tree structure
-///
-/// This trait wraps up computational queries on a tree. Closures are used to
-/// determine the recursion behavior and what is to be computed.
-trait TreeWalk<P, N, O, D> {
 
     /// Compute a query on the associated data using a mutable accumulator
     ///
@@ -281,6 +242,11 @@ impl<O, P, N, V> Node<O, P, N>
 }
 
 
+/// An N-dimensional tree
+///
+/// This tree does not know the dimension of its point at compile time, as it is
+/// not hard-coded and genericity over constants is unsupported in Rust.
+///
 pub struct NTree<P, N, O, D> {
     state: NodeState<O, NTree<P, N, O, D>>,
     center: P,
@@ -365,14 +331,29 @@ impl<P, N, O, D> NTree<P, N, O, D>
     }
 }
 
-impl<P, N, O, D, V> Tree<P, N, O, D> for NTree<P, N, O, D>
+impl<P, N, O, D, V> NTree<P, N, O, D>
     where O: Positionable<P>,
           P: FloatPnt<N, V> + Index<uint, N> + IndexMut<uint, N> + Copy + POrd,
           V: FloatVec<N>,
           N: BaseFloat,
           D: Clone,
 {
-    fn from_iter<I: Iterator<O>>(objects: I, default: D, single: |&O| -> D, combine: |&D, &D| -> D) -> NTree<P, N, O, D> {
+
+    /// Construct a tree from an iterator
+    ///
+    /// The center and width of the root node should be determined automatically
+    /// from the structure of the objects provided by the iterator.
+    ///
+    /// # Parameters
+    ///
+    /// - `objects` is an iterator over the objects that should comprise the
+    ///   tree.
+    /// - The `default` value is the associated data of an empty node.
+    /// - A terminal leaf will be associated with data using the `single`
+    ///   closure.
+    /// - More complex structures will combine their constituent data by
+    ///   subsequent invokations of the `combine` function as an operator.
+    pub fn from_iter<I: Iterator<O>>(objects: I, default: D, single: |&O| -> D, combine: |&D, &D| -> D) -> NTree<P, N, O, D> {
         let _2: N = cast(2.0f64).unwrap();
         let vec: Vec<O> = objects.collect();
         let (inf, sup) = limits(vec.iter().map(|obj| obj.position()));
@@ -382,7 +363,17 @@ impl<P, N, O, D, V> Tree<P, N, O, D> for NTree<P, N, O, D>
         NTree::from_iter_raw(vec.into_iter(), center, width, default, |o| single(o), |d1, d2| combine(d1, d2))
     }
 
-    fn from_iter_with_geometry<I: Iterator<O>>(objects: I, center: P, minimal_width: N, default: D, single: |&O| -> D, combine: |&D, &D| -> D) -> NTree<P, N, O, D> {
+    /// Same as `from_iter` but with geometrical constraints
+    ///
+    /// # Parameters
+    ///
+    /// - `objects`, `default`, `single`, `combine` are the same as in
+    ///   `from_iter`.
+    /// - `center` will be the center of the tree.
+    /// - `minimal_width` is the minimal width of the root node of the tree.
+    ///   This may be increased by the geometrical requirements of the objects,
+    ///   thus only a lower bound on the width can be imposed on the tree.
+    pub fn from_iter_with_geometry<I: Iterator<O>>(objects: I, center: P, minimal_width: N, default: D, single: |&O| -> D, combine: |&D, &D| -> D) -> NTree<P, N, O, D> {
         let _2: N = cast(2.0f64).unwrap();
         let vec: Vec<O> = objects.collect();
         let (inf, sup) = limits(vec.iter().map(|obj| obj.position()));
@@ -399,7 +390,7 @@ impl<P, N, O, D, V> Tree<P, N, O, D> for NTree<P, N, O, D>
     }
 }
 
-impl<P, N, O, D> TreeWalk<P, N, O, D> for NTree<P, N, O, D> {
+impl<P, N, O, D> Tree<P, N, O, D> for NTree<P, N, O, D> {
     fn query_data_mut<T>(&self, acc: &mut T, recurse: |&P, &N, &D| -> bool, combine: |&mut T, &D|) {
         match self.state {
             NodeState::Branch(ref nodes) if recurse(&self.center, &self.width, &self.data) =>
@@ -425,7 +416,7 @@ impl<P, N, O, D> TreeWalk<P, N, O, D> for NTree<P, N, O, D> {
 
 #[cfg(test)]
 mod test {
-    use super::{Entry, NodeState, NTree, Tree, TreeWalk, subdivide, branch_dispatch};
+    use super::{Entry, NodeState, NTree, Tree, subdivide, branch_dispatch};
     use std::num::Float;
     use std::rand::distributions::{IndependentSample, Range};
     use std::rand::task_rng;
@@ -553,7 +544,7 @@ mod test {
     #[test]
     fn ntree_from_empty_vec() {
         let tree: NTree<Pnt2<f64>, f64, Entry<uint, Pnt2<f64>>, ()> =
-            Tree::from_iter(vec![].into_iter(), (), |_| (), |_, _| ());
+            NTree::from_iter(vec![].into_iter(), (), |_| (), |_, _| ());
         match tree.state {
             NodeState::Empty => (),
             _ => panic!(),
@@ -562,7 +553,7 @@ mod test {
 
     #[quickcheck]
     fn ntree_from_iter_more_than_two_branches(data: Vec<(uint, f64, f64)>) -> bool {
-        let tree: NTree<_, _, _, _> = Tree::from_iter(
+        let tree = NTree::from_iter(
             data.iter()
             .map(|&(i, x, y)| Entry { object: i, position: Pnt2::new(x, y) }),
             (), |_| (), |_, _| ()
@@ -577,7 +568,7 @@ mod test {
 
     #[quickcheck]
     fn ntree_from_iter_one_is_a_leaf(data: Vec<(uint, f64, f64)>) -> bool {
-        let tree: NTree<_, _, _, _> = Tree::from_iter(
+        let tree = NTree::from_iter(
             data.iter()
             .map(|&(i, x, y)| Entry { object: i, position: Pnt2::new(x, y) }),
             (), |_| (), |_, _| ()
@@ -622,7 +613,7 @@ mod test {
             ),
         });
         b.iter(|| {
-            let ntree: NTree<_, _, _, _> = Tree::from_iter(
+            let ntree = NTree::from_iter(
                 vec.iter().map(|&a| a.clone()),
                 (), |_| (), |_, _| (),
             );
@@ -643,7 +634,7 @@ mod test {
             ),
         });
         b.iter(|| {
-            let ntree: NTree<_, _, _, _> = Tree::from_iter(
+            let ntree = NTree::from_iter(
                 vec.iter().map(|&a| a.clone()),
                 (), |_| (), |_, _| (),
             );
@@ -663,7 +654,7 @@ mod test {
             ),
         });
         b.iter(|| {
-            let ntree: NTree<_, _, _, _> = Tree::from_iter(
+            let ntree = NTree::from_iter(
                 vec.iter().map(|&a| a.clone()),
                 (Vec2::new(0.0f64, 0.0), 0.0f64),
                 |obj| (obj.position.to_vec() * obj.object, obj.object),
@@ -695,7 +686,7 @@ mod test {
             .fold((zero::<Vec2<f64>>(), 0.0f64), |(mps, ms), (mp, m)| (mps + mp, ms + m));
         let com = mps / ms;
         // Now use the tree
-        let tree: NTree<_, _, _, _> = Tree::from_iter(
+        let tree = NTree::from_iter(
             data.iter().map(|&(m, (x, y))|
                 Entry { object: m, position: Pnt2::new(x, y) }
             ),
@@ -754,7 +745,7 @@ mod test {
             .fold(zero(), |a: Vec3<_>, b| a + b);
         // Calculate gravity using a tree
         let orig: Pnt3<f64> = Orig::orig();
-        let tree: NTree<_, _, _, _> = Tree::from_iter_with_geometry(
+        let tree = NTree::from_iter_with_geometry(
             starfield.iter().map(|&(m, (x, y, z))|
                 Entry { object: m, position: Pnt3::new(x, y, z) }
             ),
