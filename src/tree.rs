@@ -3,13 +3,25 @@
 /// The state of a node
 ///
 /// A node may either be empty, a leaf with exactly one object or a branch with
-/// a list of other nodes.
+/// a list of other nodes. This enum encodes these states and the data
+/// associated with each of them.
 ///
 /// TODO: abstract over this, so that it works different structural
 /// representations
+///
+/// # Type parameters
+///
+/// - `O` is the type of object stored in the tree structure.
+/// - `N` is the type of the node/tree structure.
 pub enum NodeState<O, N> {
+
+    /// An empty node does not contain any object
     Empty,
+
+    /// A leaf node contains exactly one object
     Leaf(O),
+
+    /// A branch node contains a heap-allocated vector of nodes
     Branch(Vec<N>),
 }
 
@@ -78,14 +90,22 @@ pub trait ObjectQuery<O> {
 /// This is part of the essential features of a tree. Note that both a whole
 /// tree and its constituents implement this.
 pub trait Node<P, N, O> {
+
+    /// The state of the node
     fn state(&self) -> &NodeState<O, Self>;
+
+    /// The center point of the node
     fn center(&self) -> &P;
+
+    /// The width of the node
     fn width(&self) -> &N;
 }
 
 
 /// A tree with associated data
 pub trait AssociatedData<D> {
+
+    /// Data associated to the node
     fn data(&self) -> &D;
 }
 
