@@ -78,15 +78,15 @@ pub trait Tree<P, N, O, D> {
 ///
 /// This trait wraps up computational queries on a tree. Closures are used to
 /// determine the recursion behavior and what is to be computed.
-trait TreeWalk<P, N, O, D, I>: Tree<P, N, O, D> {
+trait TreeWalk<P, N, O, D> {
 
     /// Compute a query on the associated data using a mutable accumulator
     ///
-    /// This method walks recursively through the tree, as deep as `subdivide`
+    /// This method walks recursively through the tree, as deep as `recurse`
     /// prescribes, and `combine` data subsequently modifying an `accumulator`.
     ///
     /// If an empty or leaf node is encountered, `combine` is called on the
-    /// accumulator and its associated data. For a branching node `subdivide` is
+    /// accumulator and its associated data. For a branching node `recurse` is
     /// called on its center, width and associated data, to determine whether
     /// its subnodes should be inspected more closely. If so, the function
     /// recurses on each subnode, otherwise it acts on it as if it were not a
@@ -97,9 +97,9 @@ trait TreeWalk<P, N, O, D, I>: Tree<P, N, O, D> {
     /// - The `accumulator` is a mutable reference to some data, that is
     ///   modified during the query to collect.
     /// - At each node the tree is only recursed further, if
-    ///   `subdivide(&node.center, &node.width, &node.data)`.
+    ///   `recurse(&node.center, &node.width, &node.data)`.
     /// - `combine` is called for every node whose data is to be considered.
-    fn query_data_mut<T>(&self, accumulator: &mut T, subdivide: |&P, &N, &D| -> bool, combine: |&mut T, &D|);
+    fn query_data_mut<T>(&self, accumulator: &mut T, recurse: |&P, &N, &D| -> bool, combine: |&mut T, &D|);
 
     /// Compute a query on the associated data using an initial state
     ///
@@ -107,11 +107,11 @@ trait TreeWalk<P, N, O, D, I>: Tree<P, N, O, D> {
     /// implementation using it. The difference is, that an initial value is
     /// moved into the function and used to initialize the accumulator. Its
     /// final state is the method's return value.
-    fn query_data<T>(&self, initial: T, subdivide: |&P, &N, &D| -> bool, combine: |&T, &D| -> T) -> T {
+    fn query_data<T>(&self, initial: T, recurse: |&P, &N, &D| -> bool, combine: |&T, &D| -> T) -> T {
         let mut acc = initial;
         self.query_data_mut(
             &mut acc,
-            |ctr, width, data| subdivide(ctr, width, data),
+            |ctr, width, data| recurse(ctr, width, data),
             |a, d| {*a = combine(a, d);}
         );
         acc
@@ -121,19 +121,19 @@ trait TreeWalk<P, N, O, D, I>: Tree<P, N, O, D> {
     ///
     /// This method walks through the tree similar to `query_data_mut`. However,
     /// the `combine` closure is only invoked, when a leaf node is encountered.
-    /// It recurses on branch nodes if `subdivide(...)`. Empty nodes are
+    /// It recurses on branch nodes if `recurse(...)`. Empty nodes are
     /// ignored.
-    fn query_objects_mut<T>(&self, accumulator: &mut T, subdivide: |&P, &N, &D| -> bool, combine: |&mut T, &O|);
+    fn query_objects_mut<T>(&self, accumulator: &mut T, recurse: |&P, &N, &D| -> bool, combine: |&mut T, &O|);
 
     /// Compute a query on the objects using an initial state
     ///
     /// This relates to `query_objects_mut` in the same way `query_data` relates
     /// to `query_data_mut`.
-    fn query_objects<T>(&self, initial: T, subdivide: |&P, &N, &D| -> bool, combine: |&T, &O| -> T) -> T {
+    fn query_objects<T>(&self, initial: T, recurse: |&P, &N, &D| -> bool, combine: |&T, &O| -> T) -> T {
         let mut acc = initial;
         self.query_objects_mut(
             &mut acc,
-            |ctr, width, data| subdivide(ctr, width, data),
+            |ctr, width, data| recurse(ctr, width, data),
             |a, o| {*a = combine(a, o);}
         );
         acc
@@ -299,14 +299,21 @@ impl<P, N, O, D> NTree<P, N, O, D> {
             data: data,
         }
     }
+}
+
+impl<P, N, O, D: Clone> NTree<P, N, O, D> {
 
     /// Recompute the associated data
     fn recompute_data(&mut self, default: D, single: |&O| -> D, combine: |&D, &D| -> D) {
         self.data = match self.state {
             NodeState::Empty => default,
             NodeState::Leaf(ref obj) => single(obj),
-            NodeState::Branch(ref nodes) =>
-                nodes.iter().fold(default, |current, node| combine(&current, &node.data)),
+            NodeState::Branch(ref mut nodes) => {
+                for node in nodes.iter_mut() {
+                    node.recompute_data(default.clone(), |o| single(o), |d1, d2| combine(d1, d2));
+                }
+                nodes.iter().fold(default.clone(), |current, node| combine(&current, &node.data))
+            },
         };
     }
 }
@@ -353,7 +360,7 @@ impl<P, N, O, D> NTree<P, N, O, D>
         for object in objects {
             tree.insert(object, default.clone());
         }
-        tree.recompute_data(default, |o| single(o), |d1, d2| combine(d1, d2));
+        tree.recompute_data(default.clone(), |o| single(o), |d1, d2| combine(d1, d2));
         tree
     }
 }
@@ -392,23 +399,33 @@ impl<P, N, O, D, V> Tree<P, N, O, D> for NTree<P, N, O, D>
     }
 }
 
-/*impl<O, P, N, D> NodeWithData<O, P, N, D> {
-    pub fn compute<T>(&self, init: T, subdivide: |&P, &N, &D| -> bool, combine: |T, &D| -> T) -> T {
+impl<P, N, O, D> TreeWalk<P, N, O, D> for NTree<P, N, O, D> {
+    fn query_data_mut<T>(&self, acc: &mut T, recurse: |&P, &N, &D| -> bool, combine: |&mut T, &D|) {
         match self.state {
-            NodeState::Branch(ref nodes) if subdivide(&self.center, &self.width, &self.data)
-                => nodes.iter().fold(init, |current, node| node.compute(
-                    current,
-                    |p, n, d| subdivide(p, n, d), |t, d| combine(t, d)
-                )),
-            _ => combine(init, &self.data),
+            NodeState::Branch(ref nodes) if recurse(&self.center, &self.width, &self.data) =>
+                for node in nodes.iter() {
+                    node.query_data_mut(acc, |p, n, d| recurse(p, n, d), |t, d| combine(t, d))
+                },
+            _ => combine(acc, &self.data),
         }
     }
-}*/
+
+    fn query_objects_mut<T>(&self, acc: &mut T, recurse: |&P, &N, &D| -> bool, combine: |&mut T, &O|) {
+        match self.state {
+            NodeState::Branch(ref nodes) if recurse(&self.center, &self.width, &self.data) =>
+                for node in nodes.iter() {
+                    node.query_objects_mut(acc, |p, n, d| recurse(p, n, d), |t, o| combine(t, o))
+                },
+            NodeState::Leaf(ref obj) => combine(acc, obj),
+            _ => (),
+        }
+    }
+}
 
 
 #[cfg(test)]
 mod test {
-    use super::{Node, Entry, NodeState, NTree, Tree, subdivide, branch_dispatch};
+    use super::{Entry, NodeState, NTree, Tree, TreeWalk, subdivide, branch_dispatch};
     use std::num::Float;
     use std::rand::distributions::{IndependentSample, Range};
     use std::rand::task_rng;
@@ -495,25 +512,25 @@ mod test {
     }
 
     #[test]
-    fn node_insert_into_empty() {
-        let mut n = Node::empty(Pnt2::new(0.0f32, 0.0), 10.0f32);
-        n.insert(Entry { position: Pnt2::new(1.0f32, 0.0), object: 1i });
+    fn ntree_insert_into_empty() {
+        let mut n = NTree::empty(Pnt2::new(0.0f32, 0.0), 10.0f32, ());
+        n.insert(Entry { position: Pnt2::new(1.0f32, 0.0), object: 1i }, ());
         match n.state {
-            Some(NodeState::Leaf(entry)) => assert_eq!(entry.object, 1),
+            NodeState::Leaf(entry) => assert_eq!(entry.object, 1),
             _ => panic!("node is no leaf")
         }
     }
 
     #[test]
-    fn node_insert_into_leaf() {
-        let mut n = Node::empty(Pnt2::new(0.0f64, 0.0), 10.0f64);
-        n.insert(Entry { object: 1i, position: Pnt2::new(1.0f64, -2.0) });
-        n.insert(Entry { object: 2i, position: Pnt2::new(2.0, 1.0) });
+    fn ntree_insert_into_leaf() {
+        let mut n = NTree::empty(Pnt2::new(0.0f64, 0.0), 10.0f64, ());
+        n.insert(Entry { object: 1i, position: Pnt2::new(1.0f64, -2.0) }, ());
+        n.insert(Entry { object: 2i, position: Pnt2::new(2.0, 1.0) }, ());
         match n.state {
-            Some(NodeState::Branch(nodes)) => {
+            NodeState::Branch(nodes) => {
                 for &k in [1, 2].iter() {
                     assert!(nodes.iter().any(|node| match node.state {
-                        Some(NodeState::Leaf(ref entry)) => entry.object == k,
+                        NodeState::Leaf(ref entry) => entry.object == k,
                         _ => false,
                     }));
                 }
@@ -523,49 +540,51 @@ mod test {
     }
 
     #[test]
-    fn node_branch_on_second_insert() {
-        let mut n = Node::empty(Pnt2::new(0.0f64, 0.0), 8.0f64);
-        n.insert(Entry { object: 1u, position: Pnt2::new(1.0, 2.0) });
-        n.insert(Entry { object: 1u, position: Pnt2::new(2.0, -3.0) });
-        match n.state.unwrap() {
+    fn ntree_branch_on_second_insert() {
+        let mut n = NTree::empty(Pnt2::new(0.0f64, 0.0), 8.0f64, ());
+        n.insert(Entry { object: 1u, position: Pnt2::new(1.0, 2.0) }, ());
+        n.insert(Entry { object: 1u, position: Pnt2::new(2.0, -3.0) }, ());
+        match n.state {
             NodeState::Branch(_) => (),
             _ => panic!("node is no branch"),
         }
     }
 
     #[test]
-    fn node_from_empty_vec() {
-        let tree: Node<Entry<uint, Pnt2<f64>>, Pnt2<f64>, f64> =
-            Node::from_iter(vec![].into_iter());
+    fn ntree_from_empty_vec() {
+        let tree: NTree<Pnt2<f64>, f64, Entry<uint, Pnt2<f64>>, ()> =
+            Tree::from_iter(vec![].into_iter(), (), |_| (), |_, _| ());
         match tree.state {
-            Some(NodeState::Empty) => (),
+            NodeState::Empty => (),
             _ => panic!(),
         }
     }
 
     #[quickcheck]
-    fn node_from_iter_more_than_two_branches(data: Vec<(uint, f64, f64)>) -> bool {
-        let tree = Node::from_iter(
+    fn ntree_from_iter_more_than_two_branches(data: Vec<(uint, f64, f64)>) -> bool {
+        let tree: NTree<_, _, _, _> = Tree::from_iter(
             data.iter()
-            .map(|&(i, x, y)| Entry { object: i, position: Pnt2::new(x, y) })
+            .map(|&(i, x, y)| Entry { object: i, position: Pnt2::new(x, y) }),
+            (), |_| (), |_, _| ()
         );
         (data.len() >= 2) == (
             match tree.state {
-                Some(NodeState::Branch(_)) => true,
+                NodeState::Branch(_) => true,
                 _ => false,
             }
         )
     }
 
     #[quickcheck]
-    fn node_from_iter_one_is_a_leaf(data: Vec<(uint, f64, f64)>) -> bool {
-        let tree = Node::from_iter(
+    fn ntree_from_iter_one_is_a_leaf(data: Vec<(uint, f64, f64)>) -> bool {
+        let tree: NTree<_, _, _, _> = Tree::from_iter(
             data.iter()
-            .map(|&(i, x, y)| Entry { object: i, position: Pnt2::new(x, y) })
+            .map(|&(i, x, y)| Entry { object: i, position: Pnt2::new(x, y) }),
+            (), |_| (), |_, _| ()
         );
         (data.len() == 1) == (
             match tree.state {
-                Some(NodeState::Leaf(_)) => true,
+                NodeState::Leaf(_) => true,
                 _ => false,
             }
         )
@@ -653,36 +672,44 @@ mod test {
             ntree
         })
     }
-/*
+
     #[quickcheck]
-    fn node_with_data_center_of_mass(data: Vec<(f64, f64, f64)>) -> TestResult {
+    fn ntree_center_of_mass(data: Vec<(f64, (f64, f64))>) -> TestResult {
         // Only test non-empty lists with positive masses
-        if data.is_empty() || data.iter().any(|&(m, _, _)| m <= 0.0) {
+        if data.is_empty() || data.iter().any(|&(m, _)| m <= 0.0) {
             return TestResult::discard();
+        }
+        // No two points should be in the same place
+        for i in range(0, data.len()) {
+            for j in range(0, i) {
+                let (_, pi) = data[i];
+                let (_, pj) = data[j];
+                if pi == pj {
+                    return TestResult::discard();
+                }
+            }
         }
         // Compute center of mass in the traditional way
         let (mps, ms) = data.iter()
-            .map(|&(m, x, y)| (Vec2::new(x, y) * m, m))
+            .map(|&(m, (x, y))| (Vec2::new(x, y) * m, m))
             .fold((zero::<Vec2<f64>>(), 0.0f64), |(mps, ms), (mp, m)| (mps + mp, ms + m));
         let com = mps / ms;
         // Now use the tree
-        let tree = Node::from_iter(
-            data.iter()
-            .map(|&(m, x, y)| Entry { object: m, position: Pnt2::new(x, y) })
-        );
-        let assoc_tree = NodeWithData::new(
-            tree,
+        let tree: NTree<_, _, _, _> = Tree::from_iter(
+            data.iter().map(|&(m, (x, y))|
+                Entry { object: m, position: Pnt2::new(x, y) }
+            ),
             (Vec2::new(0.0f64, 0.0), 0.0f64),
             |obj| (obj.position.to_vec() * obj.object, obj.object),
             |&(mps, ms), &(mp, m)| (mps + mp, ms + m)
         );
-        let (tree_mps, tree_ms) = assoc_tree.data;
+        let (tree_mps, tree_ms) = tree.data;
         // …and compare
         TestResult::from_bool(ApproxEq::approx_eq(&(tree_mps / tree_ms), &com))
     }
 
     #[quickcheck]
-    fn node_with_data_gravity(
+    fn ntree_gravity_approx(
             starfield: Vec<(f64, (f64, f64, f64))>,
             test_point_: (f64, f64, f64)
         ) -> TestResult
@@ -727,14 +754,12 @@ mod test {
             .fold(zero(), |a: Vec3<_>, b| a + b);
         // Calculate gravity using a tree
         let orig: Pnt3<f64> = Orig::orig();
-        let tree = Node::from_iter_with_geometry(
-            starfield.iter()
-            .map(|&(m, (x, y, z))| Entry { object: m, position: Pnt3::new(x, y, z) }),
+        let tree: NTree<_, _, _, _> = Tree::from_iter_with_geometry(
+            starfield.iter().map(|&(m, (x, y, z))|
+                Entry { object: m, position: Pnt3::new(x, y, z) }
+            ),
             orig,
-            test_point.as_vec().norm()
-        );
-        let assoc_tree = NodeWithData::new(
-            tree,
+            test_point.as_vec().norm() * 2.0,
             (orig, zero()),
             |obj| (obj.position, obj.object),
             |&(com1, m1), &(com2, m2)|
@@ -747,16 +772,19 @@ mod test {
                 }
         );
         let theta = 0.5; // A bit arbitrary but this appears to work
-        let tree_gravity = assoc_tree.compute(
-            Vec3::new(0.0f64, 0.0, 0.0),
+        let mut tree_gravity: Vec3<_> = zero();
+        tree.query_data_mut(
+            &mut tree_gravity,
             |&node_center, &node_size, &(center_of_mass, _)| {
                 let d = FloatPnt::dist(&test_point, &center_of_mass);
                 let delta = FloatPnt::dist(&node_center, &center_of_mass);
                 d < node_size / theta + delta
             },
-            |g, &(com, m)| g + newton((m, com), test_point),
+            |g, &(com, m)| {
+                *g = *g + newton((m, com), test_point);
+            },
         );
         // Now the tree gravity should approximate the exact one, within 5 %
         TestResult::from_bool(simple_gravity.approx_eq_eps(&tree_gravity, &(0.05 * simple_gravity.norm())))
-    }*/
+    }
 }
