@@ -143,13 +143,13 @@ impl<P, N, O, V> PureNTree<P, N, O>
 }
 
 impl<P, N, O> ObjectQuery<O> for PureNTree<P, N, O> {
-    fn query_objects_mut<T>(&self, acc: &mut T, recurse: |&PureNTree<P, N, O>| -> bool, combine: |&mut T, &O|) {
+    fn query_objects(&self, recurse: |&PureNTree<P, N, O>| -> bool, f: |&O|) {
         match self.state {
             NodeState::Branch(ref nodes) if recurse(self) =>
                 for node in nodes.iter() {
-                    node.query_objects_mut(acc, |n| recurse(n), |t, o| combine(t, o))
+                    node.query_objects(|n| recurse(n), |o| f(o))
                 },
-            NodeState::Leaf(ref obj) => combine(acc, obj),
+            NodeState::Leaf(ref obj) => f(obj),
             _ => (),
         }
     }
@@ -340,25 +340,25 @@ impl<P, N, O, D> AssociatedData<D> for NTree<P, N, O, D> {
 }
 
 impl<P, N, O, D> DataQuery<D> for NTree<P, N, O, D> {
-    fn query_data_mut<T>(&self, acc: &mut T, recurse: |&NTree<P, N, O, D>| -> bool, combine: |&mut T, &D|) {
+    fn query_data(&self, recurse: |&NTree<P, N, O, D>| -> bool, f: |&D|) {
         match self.state {
             NodeState::Branch(ref nodes) if recurse(self) =>
                 for node in nodes.iter() {
-                    node.query_data_mut(acc, |n| recurse(n), |t, d| combine(t, d))
+                    node.query_data(|n| recurse(n), |d| f(d))
                 },
-            _ => combine(acc, &self.data),
+            _ => f(&self.data),
         }
     }
 }
 
 impl<P, N, O, D> ObjectQuery<O> for NTree<P, N, O, D> {
-    fn query_objects_mut<T>(&self, acc: &mut T, recurse: |&NTree<P, N, O, D>| -> bool, combine: |&mut T, &O|) {
+    fn query_objects(&self, recurse: |&NTree<P, N, O, D>| -> bool, f: |&O|) {
         match self.state {
             NodeState::Branch(ref nodes) if recurse(self) =>
                 for node in nodes.iter() {
-                    node.query_objects_mut(acc, |n| recurse(n), |t, o| combine(t, o))
+                    node.query_objects(|n| recurse(n), |o| f(o))
                 },
-            NodeState::Leaf(ref obj) => combine(acc, obj),
+            NodeState::Leaf(ref obj) => f(obj),
             _ => (),
         }
     }
@@ -732,16 +732,15 @@ mod test {
         );
         let theta = 0.5; // A bit arbitrary but this appears to work
         let mut tree_gravity: Vec3<_> = zero();
-        tree.query_data_mut(
-            &mut tree_gravity,
+        tree.query_data(
             |node| {
                 let &(ref center_of_mass, _) = node.data();
                 let d = FloatPnt::dist(&test_point, center_of_mass);
                 let delta = FloatPnt::dist(node.center(), center_of_mass);
                 d < *node.width() / theta + delta
             },
-            |g, &(com, m)| {
-                *g = *g + newton((m, com), test_point);
+            |&(com, m)| {
+                tree_gravity = tree_gravity + newton((m, com), test_point);
             },
         );
         // Now the tree gravity should approximate the exact one, within 5 %

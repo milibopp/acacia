@@ -27,37 +27,22 @@ pub trait DataQuery<D> {
     /// Compute a query on the associated data using a mutable accumulator
     ///
     /// This method walks recursively through the tree, as deep as `recurse`
-    /// prescribes, and `combine` data subsequently modifying an `accumulator`.
+    /// prescribes, and calls a function on the associated data of each node
+    /// encountered.
     ///
-    /// If an empty or leaf node is encountered, `combine` is called on the
-    /// accumulator and its associated data. For a branching node `recurse` is
-    /// called on it, to determine whether its subnodes should be inspected more
-    /// closely. If so, the function recurses on each subnode, otherwise it acts
-    /// on it as if it were not a branch.
+    /// If an empty or leaf node is encountered, the function is called on its
+    /// associated data. For a branching node `recurse` checks, whether its
+    /// subnodes should be inspected more closely. If so, this method recurses
+    /// on each subnode, otherwise it simply calls the function on its
+    /// associated data.
     ///
     /// # Parameters
     ///
-    /// - The `accumulator` is a mutable reference to some data, that is
-    ///   modified during the query to collect.
-    /// - At each node the tree is only recursed further, iff `recurse(&node)`.
-    /// - `combine` is called for every node whose data is to be considered.
-    fn query_data_mut<T>(&self, accumulator: &mut T, recurse: |&Self| -> bool, combine: |&mut T, &D|);
-
-    /// Compute a query on the associated data using an initial state
-    ///
-    /// This is very similar to the accumulator variant and indeed has a default
-    /// implementation using it. The difference is, that an initial value is
-    /// moved into the function and used to initialize the accumulator. Its
-    /// final state is the method's return value.
-    fn query_data<T>(&self, initial: T, recurse: |&Self| -> bool, combine: |&T, &D| -> T) -> T {
-        let mut acc = initial;
-        self.query_data_mut(
-            &mut acc,
-            |node| recurse(node),
-            |a, d| {*a = combine(a, d);}
-        );
-        acc
-    }
+    /// - At each branching node the tree is only recursed further, iff
+    ///   `recurse(&node)`.
+    /// - `f` is called on the associated data of every node reached by the
+    ///   recursion.
+    fn query_data(&self, recurse: |&Self| -> bool, f: |&D|);
 }
 
 
@@ -66,9 +51,6 @@ pub trait DataQuery<D> {
 /// Closures are used to determine the recursion behavior and what is to be
 /// computed.
 ///
-/// TODO: do not mention DataQuery methods in documentation, to make this
-/// self-contained
-///
 /// # Type parameters
 ///
 /// - `O` is the type of the objects stored in the tree.
@@ -76,25 +58,18 @@ pub trait ObjectQuery<O> {
 
     /// Compute a query on the objects using an accumulator
     ///
-    /// This method walks through the tree similar to `query_data_mut`. However,
-    /// the `combine` closure is only invoked, when a leaf node is encountered.
-    /// `recurse` determines if it recurses into branch nodes more deeply. Empty
-    /// nodes are ignored.
-    fn query_objects_mut<T>(&self, accumulator: &mut T, recurse: |&Self| -> bool, combine: |&mut T, &O|);
-
-    /// Compute a query on the objects using an initial state
+    /// This method walks recursively through the tree, as deep as `recurse`
+    /// prescribes, and calls a function on each object encountered.
     ///
-    /// This relates to `query_objects_mut` in the same way `query_data` relates
-    /// to `query_data_mut`.
-    fn query_objects<T>(&self, initial: T, recurse: |&Self| -> bool, combine: |&T, &O| -> T) -> T {
-        let mut acc = initial;
-        self.query_objects_mut(
-            &mut acc,
-            |node| recurse(node),
-            |a, o| {*a = combine(a, o);}
-        );
-        acc
-    }
+    /// Empty nodes and branch nodes with `!recurse(&node)` are ignored, whereas
+    /// the callback is called on every object in a leaf node.
+    ///
+    /// # Parameters
+    ///
+    /// - At each branching node the tree is only recursed further, iff
+    ///   `recurse(&node)`.
+    /// - `f` is the callback function.
+    fn query_objects(&self, recurse: |&Self| -> bool, f: |&O|);
 }
 
 
