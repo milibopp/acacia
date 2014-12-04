@@ -2,6 +2,7 @@ use nalgebra::{Dim, BaseFloat, FloatPnt, FloatVec, zero, POrd};
 use std::num::{Float, Int, cast};
 use std::cmp::partial_max;
 use std::iter::AdditiveIterator;
+use std::mem;
 use util::limits;
 
 
@@ -280,44 +281,118 @@ impl<O, P, N, V> Node<O, P, N>
 }
 
 
-pub struct NodeWithData<O, P, N, D> {
-    state: NodeState<O, NodeWithData<O, P, N, D>>,
+pub struct NTree<P, N, O, D> {
+    state: NodeState<O, NTree<P, N, O, D>>,
     center: P,
     width: N,
     data: D,
 }
 
-impl<O, P, N, D> NodeWithData<O, P, N, D>
-    where D: Clone
-{
-    pub fn new(node: Node<O, P, N>, default: D, single: |&O| -> D, combine: |&D, &D| -> D) -> NodeWithData<O, P, N, D> {
-        let (center, width) = (node.center, node.width);
-        let (state, data) = match node.state.unwrap() {
-            NodeState::Empty => (NodeState::Empty, default),
-            NodeState::Leaf(obj) => {
-                let value = single(&obj);
-                (NodeState::Leaf(obj), value)
-            },
-            NodeState::Branch(nodes) => {
-                let assoc_nodes: Vec<_> = nodes.into_iter()
-                    .map(|node|
-                        NodeWithData::new(node, default.clone(), |x| single(x), |x, y| combine(x, y)))
-                    .collect();
-                let value = assoc_nodes.iter().fold(default,
-                    |current, node| combine(&current, &node.data));
-                (NodeState::Branch(assoc_nodes), value)
-            }
-        };
-        NodeWithData {
-            state: state,
+impl<P, N, O, D> NTree<P, N, O, D> {
+
+    /// Construct an empty tree
+    fn empty(center: P, width: N, data: D) -> NTree<P, N, O, D> {
+        NTree {
+            state: NodeState::Empty,
             center: center,
             width: width,
             data: data,
         }
     }
+
+    /// Recompute the associated data
+    fn recompute_data(&mut self, default: D, single: |&O| -> D, combine: |&D, &D| -> D) {
+        self.data = match self.state {
+            NodeState::Empty => default,
+            NodeState::Leaf(ref obj) => single(obj),
+            NodeState::Branch(ref nodes) =>
+                nodes.iter().fold(default, |current, node| combine(&current, &node.data)),
+        };
+    }
 }
 
-impl<O, P, N, D> NodeWithData<O, P, N, D> {
+impl<P, N, O, D> NTree<P, N, O, D>
+    where O: Positionable<P>,
+          P: Dim + Index<uint, N> + IndexMut<uint, N> + Copy,
+          N: BaseFloat,
+          D: Clone,
+{
+
+    /// Inserts a new object into the tree
+    ///
+    /// NOTE: this does not update the data correctly but merely places a
+    /// default value in there.
+    fn insert(&mut self, object: O, default: D) {
+        let mut tmp = NodeState::Empty;
+        mem::swap(&mut tmp, &mut self.state);
+        self.state = match tmp {
+            NodeState::Empty => NodeState::Leaf(object),
+            NodeState::Leaf(other) => {
+                let mut nodes: Vec<NTree<P, N, O, D>> = subdivide(&self.center, &self.width)
+                    .into_iter()
+                    .map(|(p, n)| NTree::empty(p, n, default.clone()))
+                    .collect();
+                nodes[branch_dispatch(&self.center, &other.position())].insert(other, default.clone());
+                nodes[branch_dispatch(&self.center, &object.position())].insert(object, default.clone());
+                NodeState::Branch(nodes)
+            },
+            NodeState::Branch(mut nodes) => {
+                nodes[branch_dispatch(&self.center, &object.position())].insert(object, default.clone());
+                NodeState::Branch(nodes)
+            },
+        };
+    }
+
+    /// Construct the tree from an iterator with fixed center and width
+    ///
+    /// NOTE: this is prone to stack overflows! By calling this you effectively
+    /// assert that all positions are within the tree bounds.
+    fn from_iter_raw<I: Iterator<O>>(objects: I, center: P, width: N, default: D, single: |&O| -> D, combine: |&D, &D| -> D) -> NTree<P, N, O, D> {
+        let mut objects = objects;
+        let mut tree = NTree::empty(center, width, default.clone());
+        for object in objects {
+            tree.insert(object, default.clone());
+        }
+        tree.recompute_data(default, |o| single(o), |d1, d2| combine(d1, d2));
+        tree
+    }
+}
+
+impl<P, N, O, D, V> Tree<P, N, O, D> for NTree<P, N, O, D>
+    where O: Positionable<P>,
+          P: FloatPnt<N, V> + Index<uint, N> + IndexMut<uint, N> + Copy + POrd,
+          V: FloatVec<N>,
+          N: BaseFloat,
+          D: Clone,
+{
+    fn from_iter<I: Iterator<O>>(objects: I, default: D, single: |&O| -> D, combine: |&D, &D| -> D) -> NTree<P, N, O, D> {
+        let _2: N = cast(2.0f64).unwrap();
+        let vec: Vec<O> = objects.collect();
+        let (inf, sup) = limits(vec.iter().map(|obj| obj.position()));
+        let center = (inf + sup.to_vec()) / _2;
+        let width = _2 * range(0, Dim::dim(None::<P>))
+            .fold(zero(), |max, n| partial_max(max, sup[n] - inf[n]).unwrap());
+        NTree::from_iter_raw(vec.into_iter(), center, width, default, |o| single(o), |d1, d2| combine(d1, d2))
+    }
+
+    fn from_iter_with_geometry<I: Iterator<O>>(objects: I, center: P, minimal_width: N, default: D, single: |&O| -> D, combine: |&D, &D| -> D) -> NTree<P, N, O, D> {
+        let _2: N = cast(2.0f64).unwrap();
+        let vec: Vec<O> = objects.collect();
+        let (inf, sup) = limits(vec.iter().map(|obj| obj.position()));
+        let width = _2 * range(0, Dim::dim(None::<P>))
+            .fold(minimal_width, |max, n|
+                partial_max(
+                    max, partial_max(
+                        (center[n] - sup[n]).abs(),
+                        (center[n] - inf[n]).abs()
+                    ).unwrap()
+                ).unwrap()
+            );
+        NTree::from_iter_raw(vec.into_iter(), center, width, default, |o| single(o), |d1, d2| combine(d1, d2))
+    }
+}
+
+/*impl<O, P, N, D> NodeWithData<O, P, N, D> {
     pub fn compute<T>(&self, init: T, subdivide: |&P, &N, &D| -> bool, combine: |T, &D| -> T) -> T {
         match self.state {
             NodeState::Branch(ref nodes) if subdivide(&self.center, &self.width, &self.data)
@@ -328,12 +403,12 @@ impl<O, P, N, D> NodeWithData<O, P, N, D> {
             _ => combine(init, &self.data),
         }
     }
-}
+}*/
 
 
 #[cfg(test)]
 mod test {
-    use super::{Node, Entry, NodeState, NodeWithData, subdivide, branch_dispatch};
+    use super::{Node, Entry, NodeState, NTree, Tree, subdivide, branch_dispatch};
     use std::num::Float;
     use std::rand::distributions::{IndependentSample, Range};
     use std::rand::task_rng;
@@ -508,7 +583,11 @@ mod test {
             ),
         });
         b.iter(|| {
-            Node::from_iter_raw(vec.iter().map(|&a| a.clone()), Orig::orig(), 1.0)
+            NTree::from_iter_raw(
+                vec.iter().map(|&a| a.clone()),
+                Orig::orig(), 2.0,
+                (), |_| (), |_, _| ()
+            )
         })
     }
 
@@ -524,7 +603,11 @@ mod test {
             ),
         });
         b.iter(|| {
-            Node::from_iter(vec.iter().map(|&a| a.clone()))
+            let ntree: NTree<_, _, _, _> = Tree::from_iter(
+                vec.iter().map(|&a| a.clone()),
+                (), |_| (), |_, _| (),
+            );
+            ntree
         })
     }
 
@@ -541,7 +624,11 @@ mod test {
             ),
         });
         b.iter(|| {
-            Node::from_iter(vec.iter().map(|&a| a.clone()))
+            let ntree: NTree<_, _, _, _> = Tree::from_iter(
+                vec.iter().map(|&a| a.clone()),
+                (), |_| (), |_, _| (),
+            );
+            ntree
         })
     }
 
@@ -557,16 +644,16 @@ mod test {
             ),
         });
         b.iter(|| {
-            let tree = Node::from_iter(vec.iter().map(|&a| a.clone()));
-            NodeWithData::new(
-                tree,
+            let ntree: NTree<_, _, _, _> = Tree::from_iter(
+                vec.iter().map(|&a| a.clone()),
                 (Vec2::new(0.0f64, 0.0), 0.0f64),
                 |obj| (obj.position.to_vec() * obj.object, obj.object),
                 |&(mps, ms), &(mp, m)| (mps + mp, ms + m)
-            )
+            );
+            ntree
         })
     }
-
+/*
     #[quickcheck]
     fn node_with_data_center_of_mass(data: Vec<(f64, f64, f64)>) -> TestResult {
         // Only test non-empty lists with positive masses
@@ -671,5 +758,5 @@ mod test {
         );
         // Now the tree gravity should approximate the exact one, within 5 %
         TestResult::from_bool(simple_gravity.approx_eq_eps(&tree_gravity, &(0.05 * simple_gravity.norm())))
-    }
+    }*/
 }
