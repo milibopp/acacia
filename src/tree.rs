@@ -206,24 +206,23 @@ pub enum NodeState<O, N> {
 }
 
 
-#[unstable="must be refactored to implement the new traits"]
-pub struct PureNTree<O, P, N> {
-    state: Option<NodeState<O, PureNTree<O, P, N>>>,
+pub struct PureNTree<P, N, O> {
+    state: NodeState<O, PureNTree<P, N, O>>,
     center: P,
     width: N,
 }
 
 impl<O, P, N> PureNTree<O, P, N> {
-    pub fn empty(center: P, width: N) -> PureNTree<O, P, N> {
+    fn empty(center: P, width: N) -> PureNTree<P, N, O> {
         PureNTree {
-            state: Some(NodeState::Empty),
+            state: NodeState::Empty,
             center: center,
             width: width,
         }
     }
 }
 
-impl<O, P, N, V> PureNTree<O, P, N>
+impl<P, N, O, V> PureNTree<P, N, O>
     where O: Positionable<P>,
           P: FloatPnt<N, V> + Index<uint, N> + IndexMut<uint, N> + Copy + POrd,
           V: FloatVec<N>,
@@ -233,7 +232,7 @@ impl<O, P, N, V> PureNTree<O, P, N>
     ///
     /// Note: this is prone to stack overflows! By calling this you effectively
     /// assert that all positions are within the tree bounds.
-    pub fn from_iter_raw<I: Iterator<O>>(iter: I, center: P, width: N) -> PureNTree<O, P, N> {
+    fn from_iter_raw<I: Iterator<O>>(iter: I, center: P, width: N) -> PureNTree<P, N, O> {
         let mut tree = PureNTree::empty(center, width);
         let mut iter = iter;
         for object in iter {
@@ -242,7 +241,7 @@ impl<O, P, N, V> PureNTree<O, P, N>
         tree
     }
 
-    pub fn from_iter<I: Iterator<O>>(iter: I) -> PureNTree<O, P, N> {
+    pub fn from_iter<I: Iterator<O>>(iter: I) -> PureNTree<P, N, O> {
         let _2: N = cast(2.0f64).unwrap();
         let vec: Vec<O> = iter.collect();
         let (inf, sup) = limits(vec.iter().map(|obj| obj.position()));
@@ -252,7 +251,7 @@ impl<O, P, N, V> PureNTree<O, P, N>
         PureNTree::from_iter_raw(vec.into_iter(), center, width)
     }
 
-    pub fn from_iter_with_geometry<I: Iterator<O>>(iter: I, center: P, minimal_width: N) -> PureNTree<O, P, N> {
+    pub fn from_iter_with_geometry<I: Iterator<O>>(iter: I, center: P, minimal_width: N) -> PureNTree<P, N, O> {
         let _2: N = cast(2.0f64).unwrap();
         let vec: Vec<O> = iter.collect();
         let (inf, sup) = limits(vec.iter().map(|obj| obj.position()));
@@ -269,17 +268,18 @@ impl<O, P, N, V> PureNTree<O, P, N>
     }
 }
 
-impl<O, P, N, V> PureNTree<O, P, N>
+impl<P, N, O, V> PureNTree<P, N, O>
     where O: Positionable<P>,
           P: FloatPnt<N, V> + Index<uint, N> + IndexMut<uint, N> + Copy,
           N: BaseFloat,
 {
-    pub fn insert(&mut self, object: O) {
-        let tmp = self.state.take().unwrap();
-        self.state = Some(match tmp {
+    fn insert(&mut self, object: O) {
+        let mut tmp = NodeState::Empty;
+        mem::swap(&mut tmp, &mut self.state);
+        self.state = match tmp {
             NodeState::Empty => NodeState::Leaf(object),
             NodeState::Leaf(other) => {
-                let mut nodes: Vec<PureNTree<O, P, N>> = subdivide(&self.center, &self.width)
+                let mut nodes: Vec<PureNTree<P, N, O>> = subdivide(&self.center, &self.width)
                     .into_iter()
                     .map(|(p, n)| PureNTree::empty(p, n))
                     .collect();
@@ -291,9 +291,38 @@ impl<O, P, N, V> PureNTree<O, P, N>
                 nodes[branch_dispatch(&self.center, &object.position())].insert(object);
                 NodeState::Branch(nodes)
             },
-        });
+        };
     }
 }
+
+impl<P, N, O> ObjectQuery<O> for PureNTree<P, N, O> {
+    fn query_objects_mut<T>(&self, acc: &mut T, recurse: |&PureNTree<P, N, O>| -> bool, combine: |&mut T, &O|) {
+        match self.state {
+            NodeState::Branch(ref nodes) if recurse(self) =>
+                for node in nodes.iter() {
+                    node.query_objects_mut(acc, |n| recurse(n), |t, o| combine(t, o))
+                },
+            NodeState::Leaf(ref obj) => combine(acc, obj),
+            _ => (),
+        }
+    }
+}
+
+impl<P, N, O> Node<P, N, O> for PureNTree<P, N, O> {
+    fn state(&self) -> &NodeState<O, PureNTree<P, N, O>> {
+        &self.state
+    }
+
+    fn center(&self) -> &P {
+        &self.center
+    }
+
+    fn width(&self) -> &N {
+        &self.width
+    }
+}
+
+impl<P, N, O> PureTree<P, N, O> for PureNTree<P, N, O> {}
 
 
 /// An N-dimensional tree
@@ -488,10 +517,13 @@ impl<P, N, O, D> ObjectQuery<O> for NTree<P, N, O, D> {
     }
 }
 
+impl<P, N, O, D> PureTree<P, N, O> for NTree<P, N, O, D> {}
+impl<P, N, O, D> Tree<P, N, O, D> for NTree<P, N, O, D> {}
+
 
 #[cfg(test)]
 mod test {
-    use super::{Entry, NodeState, NTree, Node, AssociatedData, DataQuery, subdivide, branch_dispatch};
+    use super::{Entry, NodeState, NTree, PureNTree, Node, AssociatedData, DataQuery, subdivide, branch_dispatch};
     use std::num::Float;
     use std::rand::distributions::{IndependentSample, Range};
     use std::rand::task_rng;
@@ -657,7 +689,7 @@ mod test {
     }
 
     #[bench]
-    fn quadtree_raw_tree_construction_uniform(b: &mut Bencher) {
+    fn pure_ntree_quad_from_iter_raw_1000(b: &mut Bencher) {
         let coord_dist = Range::new(-1.0f64, 1.0);
         let mut rng = task_rng();
         let vec = Vec::from_fn(1000, |_| Entry {
@@ -668,16 +700,15 @@ mod test {
             ),
         });
         b.iter(|| {
-            NTree::from_iter_raw(
+            PureNTree::from_iter_raw(
                 vec.iter().map(|&a| a.clone()),
                 Orig::orig(), 2.0,
-                (), |_| (), |_, _| ()
             )
         })
     }
 
     #[bench]
-    fn quadtree_construction_uniform(b: &mut Bencher) {
+    fn pure_ntree_quad_from_iter_1000(b: &mut Bencher) {
         let coord_dist = Range::new(-1.0f64, 1.0);
         let mut rng = task_rng();
         let vec = Vec::from_fn(1000, |_| Entry {
@@ -687,17 +718,13 @@ mod test {
                 coord_dist.ind_sample(&mut rng)
             ),
         });
-        b.iter(|| {
-            let ntree = NTree::from_iter(
-                vec.iter().map(|&a| a.clone()),
-                (), |_| (), |_, _| (),
-            );
-            ntree
-        })
+        b.iter(||
+            PureNTree::from_iter(vec.iter().map(|&a| a.clone()))
+        )
     }
 
     #[bench]
-    fn octree_construction_uniform(b: &mut Bencher) {
+    fn pure_ntree_oc_from_iter_1000(b: &mut Bencher) {
         let coord_dist = Range::new(-1.0f64, 1.0);
         let mut rng = task_rng();
         let vec = Vec::from_fn(1000, |_| Entry {
@@ -709,16 +736,12 @@ mod test {
             ),
         });
         b.iter(|| {
-            let ntree = NTree::from_iter(
-                vec.iter().map(|&a| a.clone()),
-                (), |_| (), |_, _| (),
-            );
-            ntree
+            PureNTree::from_iter(vec.iter().map(|&a| a.clone()))
         })
     }
 
     #[bench]
-    fn quadtree_associate_data(b: &mut Bencher) {
+    fn ntree_quad_with_center_of_mass_from_iter_1000(b: &mut Bencher) {
         let coord_dist = Range::new(-1.0f64, 1.0);
         let mut rng = task_rng();
         let vec = Vec::from_fn(1000, |_| Entry {
@@ -729,13 +752,34 @@ mod test {
             ),
         });
         b.iter(|| {
-            let ntree = NTree::from_iter(
+            NTree::from_iter(
                 vec.iter().map(|&a| a.clone()),
                 (Vec2::new(0.0f64, 0.0), 0.0f64),
                 |obj| (obj.position.to_vec() * obj.object, obj.object),
                 |&(mps, ms), &(mp, m)| (mps + mp, ms + m)
-            );
-            ntree
+            )
+        })
+    }
+
+    #[bench]
+    fn ntree_quad_with_center_of_mass_from_iter_raw_1000(b: &mut Bencher) {
+        let coord_dist = Range::new(-1.0f64, 1.0);
+        let mut rng = task_rng();
+        let vec = Vec::from_fn(1000, |_| Entry {
+            object: 1.0,
+            position: Pnt2::new(
+                coord_dist.ind_sample(&mut rng),
+                coord_dist.ind_sample(&mut rng)
+            ),
+        });
+        b.iter(|| {
+            NTree::from_iter_raw(
+                vec.iter().map(|&a| a.clone()),
+                Orig::orig(), 2.0,
+                (Vec2::new(0.0f64, 0.0), 0.0f64),
+                |obj| (obj.position.to_vec() * obj.object, obj.object),
+                |&(mps, ms), &(mp, m)| (mps + mp, ms + m)
+            )
         })
     }
 
