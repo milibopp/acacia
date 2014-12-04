@@ -24,6 +24,122 @@ impl<O, P> Positionable<P> for Entry<O, P>
 }
 
 
+/// Abstract definition of a tree
+///
+/// TODO: add some more detailed description.
+///
+/// # Type parameters
+///
+/// - `P` is the kind of point used to position objects and nodes spatially.
+/// - `N` is the scalar of the vector space of points.
+/// - The tree stores objects of type `O`. These objects need to have some
+///   notion of a position.
+/// - `D` is the kind of data associated with each node. This is computed
+///   recursively during tree construction.
+pub trait Tree<P, N, O, D> {
+
+    /// Construct a tree from an iterator
+    ///
+    /// The center and width of the root node should be determined automatically
+    /// from the structure of the objects provided by the iterator.
+    ///
+    /// # Parameters
+    ///
+    /// - `objects` is an iterator over the objects that should comprise the
+    ///   tree.
+    /// - The `default` value is the associated data of an empty node.
+    /// - A terminal leaf will be associated with data using the `single`
+    ///   closure.
+    /// - More complex structures will combine their constituent data by
+    ///   subsequent invokations of the `combine` function as an operator.
+    fn from_iter<I: Iterator<O>>(
+            objects: I, default: D, single: |&O| -> D, combine: |&D, &D| -> D)
+        -> Self;
+
+    /// Same as `from_iter` but with geometrical constraints
+    ///
+    /// # Parameters
+    ///
+    /// - `objects`, `default`, `single`, `combine` are the same as in
+    ///   `from_iter`.
+    /// - `center` will be the center of the tree.
+    /// - `minimal_width` is the minimal width of the root node of the tree.
+    ///   This may be increased by the geometrical requirements of the objects,
+    ///   thus only a lower bound on the width can be imposed on the tree.
+    fn from_iter_with_geometry<I: Iterator<O>>(
+            objects: I, center: P, minimal_width: N, default: D,
+            single: |&O| -> D, combine: |&D, &D| -> D)
+        -> Self;
+}
+
+
+/// Queries on a tree structure
+///
+/// This trait wraps up computational queries on a tree. Closures are used to
+/// determine the recursion behavior and what is to be computed.
+trait TreeWalk<P, N, O, D, I>: Tree<P, N, O, D> {
+
+    /// Compute a query on the associated data using a mutable accumulator
+    ///
+    /// This method walks recursively through the tree, as deep as `subdivide`
+    /// prescribes, and `combine` data subsequently modifying an `accumulator`.
+    ///
+    /// If an empty or leaf node is encountered, `combine` is called on the
+    /// accumulator and its associated data. For a branching node `subdivide` is
+    /// called on its center, width and associated data, to determine whether
+    /// its subnodes should be inspected more closely. If so, the function
+    /// recurses on each subnode, otherwise it acts on it as if it were not a
+    /// branch.
+    ///
+    /// # Parameters
+    ///
+    /// - The `accumulator` is a mutable reference to some data, that is
+    ///   modified during the query to collect.
+    /// - At each node the tree is only recursed further, if
+    ///   `subdivide(&node.center, &node.width, &node.data)`.
+    /// - `combine` is called for every node whose data is to be considered.
+    fn query_data_mut<T>(&self, accumulator: &mut T, subdivide: |&P, &N, &D| -> bool, combine: |&mut T, &D|);
+
+    /// Compute a query on the associated data using an initial state
+    ///
+    /// This is very similar to the accumulator variant and indeed has a default
+    /// implementation using it. The difference is, that an initial value is
+    /// moved into the function and used to initialize the accumulator. Its
+    /// final state is the method's return value.
+    fn query_data<T>(&self, initial: T, subdivide: |&P, &N, &D| -> bool, combine: |&T, &D| -> T) -> T {
+        let mut acc = initial;
+        self.query_data_mut(
+            &mut acc,
+            |ctr, width, data| subdivide(ctr, width, data),
+            |a, d| {*a = combine(a, d);}
+        );
+        acc
+    }
+
+    /// Compute a query on the objects using an accumulator
+    ///
+    /// This method walks through the tree similar to `query_data_mut`. However,
+    /// the `combine` closure is only invoked, when a leaf node is encountered.
+    /// It recurses on branch nodes if `subdivide(...)`. Empty nodes are
+    /// ignored.
+    fn query_objects_mut<T>(&self, accumulator: &mut T, subdivide: |&P, &N, &D| -> bool, combine: |&mut T, &O|);
+
+    /// Compute a query on the objects using an initial state
+    ///
+    /// This relates to `query_objects_mut` in the same way `query_data` relates
+    /// to `query_data_mut`.
+    fn query_objects<T>(&self, initial: T, subdivide: |&P, &N, &D| -> bool, combine: |&T, &O| -> T) -> T {
+        let mut acc = initial;
+        self.query_objects_mut(
+            &mut acc,
+            |ctr, width, data| subdivide(ctr, width, data),
+            |a, o| {*a = combine(a, o);}
+        );
+        acc
+    }
+}
+
+
 /// Subdivision helper function
 ///
 /// Given the center of a node and its extent, this function generates a vector
