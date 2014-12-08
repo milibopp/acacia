@@ -710,7 +710,7 @@ mod test {
         // Newton's law of gravity for two point masses (with G = 1)
         let newton = |(m, p1): (f64, Pnt3<f64>), p2| {
             let diff: Vec3<f64> = p1 - p2;
-            let r = diff.norm();
+            let r = Norm::norm(&diff);
             diff * (m / r.powi(3))
         };
         // Calculate gravity exactly
@@ -724,7 +724,7 @@ mod test {
                 Entry { object: m, position: Pnt3::new(x, y, z) }
             ),
             orig,
-            test_point.as_vec().norm() * 2.0,
+            Norm::norm(test_point.as_vec()) * 2.0,
             (orig, zero()),
             |obj| (obj.position, obj.object),
             |&(com1, m1), &(com2, m2)|
@@ -750,6 +750,6 @@ mod test {
             },
         );
         // Now the tree gravity should approximate the exact one, within 5 %
-        TestResult::from_bool(simple_gravity.approx_eq_eps(&tree_gravity, &(0.05 * simple_gravity.norm())))
+        TestResult::from_bool(ApproxEq::approx_eq_eps(&simple_gravity, &tree_gravity, &(0.05 * Norm::norm(&simple_gravity))))
     }
 }

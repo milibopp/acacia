@@ -3,12 +3,17 @@
 name = "acacia"
 version = "0.0.1"
 authors = ["Eduard Bopp <eduard.bopp@aepsil0n.de>"]
+description = "A spatial tree library"
+documentation = "http://www.rust-ci.org/aepsil0n/acacia/doc/acacia/"
+homepage = "https://github.com/aepsil0n/acacia"
+repository = "https://github.com/aepsil0n/acacia.git"
+readme = "README.md"
+keywords = [
+    "algorithms", "math", "tree", "spatial",
+]
+license = "GPL-3.0+"
 
-[dependencies.nalgebra]
-git = "https://github.com/sebcrozet/nalgebra"
-
-[dependencies.quickcheck]
-git = "https://github.com/BurntSushi/quickcheck"
-
-[dependencies.quickcheck_macros]
-git = "https://github.com/BurntSushi/quickcheck"
+[dependencies]
+nalgebra = "~0.1.0"
+quickcheck = "~0.1.5"
+quickcheck_macros = "~0.1.5"
