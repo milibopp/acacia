@@ -639,6 +639,34 @@ mod test {
         })
     }
 
+    #[bench]
+    fn pure_ntree_query_objects(b: &mut Bencher) {
+        let coord_dist = Range::new(-1.0f64, 1.0);
+        let mut rng = task_rng();
+        let objects: Vec<_> = range(0u, 1000).map(|_| Entry {
+            object: (),
+            position: Pnt2::new(
+                coord_dist.ind_sample(&mut rng),
+                coord_dist.ind_sample(&mut rng)
+            ),
+        }).collect();
+        let search_radius = 0.3;
+        let tree = PureNTree::from_iter(objects.clone().into_iter());
+        b.iter(|| {
+            // Count the number of objects within the search radius 10000 times
+            range(0u, 10000)
+                .map(|_| {
+                    let mut i = 0u;
+                    tree.query_objects(
+                        |node| node.center().dist(&Orig::orig()) < search_radius + *node.width() / 2.0,
+                        |other| if other.position.dist(&Orig::orig()) < search_radius {i += 1},
+                    );
+                    i
+                })
+                .sum()
+        })
+    }
+
     #[quickcheck]
     fn ntree_center_of_mass(data: Vec<(f64, (f64, f64))>) -> TestResult {
         // Only test non-empty lists with positive masses
