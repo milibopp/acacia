@@ -556,7 +556,7 @@ mod test {
         });
         b.iter(|| {
             PureNTree::from_iter_raw(
-                vec.iter().map(|&a| a.clone()),
+                vec.iter().map(|a| a.clone()),
                 Orig::orig(), 2.0,
             )
         })
@@ -574,7 +574,7 @@ mod test {
             ),
         });
         b.iter(||
-            PureNTree::from_iter(vec.iter().map(|&a| a.clone()))
+            PureNTree::from_iter(vec.iter().map(|a| a.clone()))
         )
     }
 
@@ -591,7 +591,7 @@ mod test {
             ),
         });
         b.iter(|| {
-            PureNTree::from_iter(vec.iter().map(|&a| a.clone()))
+            PureNTree::from_iter(vec.iter().map(|a| a.clone()))
         })
     }
 
@@ -608,7 +608,7 @@ mod test {
         });
         b.iter(|| {
             NTree::from_iter(
-                vec.iter().map(|&a| a.clone()),
+                vec.iter().map(|a| a.clone()),
                 (Vec2::new(0.0f64, 0.0), 0.0f64),
                 |obj| (obj.position.to_vec() * obj.object, obj.object),
                 |&(mps, ms), &(mp, m)| (mps + mp, ms + m)
@@ -629,7 +629,7 @@ mod test {
         });
         b.iter(|| {
             NTree::from_iter_raw(
-                vec.iter().map(|&a| a.clone()),
+                vec.iter().map(|a| a.clone()),
                 Orig::orig(), 2.0,
                 (Vec2::new(0.0f64, 0.0), 0.0f64),
                 |obj| (obj.position.to_vec() * obj.object, obj.object),
