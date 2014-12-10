@@ -58,7 +58,7 @@ fn branch_dispatch<P, N>(center: &P, point: &P) -> uint
 
 /// A pure N-dimensional tree
 pub struct PureNTree<P, N, O> {
-    state: NodeState<O, PureNTree<P, N, O>>,
+    state: NodeState<O, Vec<PureNTree<P, N, O>>>,
     center: P,
     width: N,
 }
@@ -161,8 +161,9 @@ impl<P, N, O> ObjectQuery<O> for PureNTree<P, N, O> {
     }
 }
 
-impl<P, N, O> Node<P, N, O> for PureNTree<P, N, O> {
-    fn state(&self) -> &NodeState<O, PureNTree<P, N, O>> {
+impl<P, N, O> Node<P, N, O, Vec<PureNTree<P, N, O>>> for PureNTree<P, N, O> {
+
+    fn state(&self) -> &NodeState<O, Vec<PureNTree<P, N, O>>> {
         &self.state
     }
 
@@ -175,7 +176,7 @@ impl<P, N, O> Node<P, N, O> for PureNTree<P, N, O> {
     }
 }
 
-impl<P, N, O> PureTree<P, N, O> for PureNTree<P, N, O> {}
+impl<P, N, O> PureTree<P, N, O, Vec<PureNTree<P, N, O>>> for PureNTree<P, N, O> {}
 
 
 /// An N-dimensional tree
@@ -183,7 +184,7 @@ impl<P, N, O> PureTree<P, N, O> for PureNTree<P, N, O> {}
 /// This tree does not know the dimension of its point at compile time, as it is
 /// not hard-coded and genericity over constants is unsupported in Rust.
 pub struct NTree<P, N, O, D> {
-    state: NodeState<O, NTree<P, N, O, D>>,
+    state: NodeState<O, Vec<NTree<P, N, O, D>>>,
     center: P,
     width: N,
     data: D,
@@ -325,8 +326,8 @@ impl<P, N, O, D, V> NTree<P, N, O, D>
     }
 }
 
-impl<P, N, O, D> Node<P, N, O> for NTree<P, N, O, D> {
-    fn state(&self) -> &NodeState<O, NTree<P, N, O, D>> {
+impl<P, N, O, D> Node<P, N, O, Vec<NTree<P, N, O, D>>> for NTree<P, N, O, D> {
+    fn state(&self) -> &NodeState<O, Vec<NTree<P, N, O, D>>> {
         &self.state
     }
 
@@ -370,8 +371,8 @@ impl<P, N, O, D> ObjectQuery<O> for NTree<P, N, O, D> {
     }
 }
 
-impl<P, N, O, D> PureTree<P, N, O> for NTree<P, N, O, D> {}
-impl<P, N, O, D> Tree<P, N, O, D> for NTree<P, N, O, D> {}
+impl<P, N, O, D> PureTree<P, N, O, Vec<NTree<P, N, O, D>>> for NTree<P, N, O, D> {}
+impl<P, N, O, D> Tree<P, N, O, Vec<NTree<P, N, O, D>>, D> for NTree<P, N, O, D> {}
 
 
 #[cfg(test)]
@@ -556,7 +557,7 @@ mod test {
         });
         b.iter(|| {
             PureNTree::from_iter_raw(
-                vec.iter().map(|&a| a.clone()),
+                vec.iter().map(|a| a.clone()),
                 Orig::orig(), 2.0,
             )
         })
@@ -574,7 +575,7 @@ mod test {
             ),
         });
         b.iter(||
-            PureNTree::from_iter(vec.iter().map(|&a| a.clone()))
+            PureNTree::from_iter(vec.iter().map(|a| a.clone()))
         )
     }
 
@@ -591,7 +592,7 @@ mod test {
             ),
         });
         b.iter(|| {
-            PureNTree::from_iter(vec.iter().map(|&a| a.clone()))
+            PureNTree::from_iter(vec.iter().map(|a| a.clone()))
         })
     }
 
@@ -608,7 +609,7 @@ mod test {
         });
         b.iter(|| {
             NTree::from_iter(
-                vec.iter().map(|&a| a.clone()),
+                vec.iter().map(|a| a.clone()),
                 (Vec2::new(0.0f64, 0.0), 0.0f64),
                 |obj| (obj.position.to_vec() * obj.object, obj.object),
                 |&(mps, ms), &(mp, m)| (mps + mp, ms + m)
@@ -629,7 +630,7 @@ mod test {
         });
         b.iter(|| {
             NTree::from_iter_raw(
-                vec.iter().map(|&a| a.clone()),
+                vec.iter().map(|a| a.clone()),
                 Orig::orig(), 2.0,
                 (Vec2::new(0.0f64, 0.0), 0.0f64),
                 |obj| (obj.position.to_vec() * obj.object, obj.object),
