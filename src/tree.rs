@@ -6,14 +6,11 @@
 /// a list of other nodes. This enum encodes these states and the data
 /// associated with each of them.
 ///
-/// TODO: abstract over this, so that it works different structural
-/// representations
-///
 /// # Type parameters
 ///
 /// - `O` is the type of object stored in the tree structure.
-/// - `N` is the type of the node/tree structure.
-pub enum NodeState<O, N> {
+/// - `C` is a collection of nodes in a branch.
+pub enum NodeState<O, C> {
 
     /// An empty node does not contain any object
     Empty,
@@ -21,8 +18,8 @@ pub enum NodeState<O, N> {
     /// A leaf node contains exactly one object
     Leaf(O),
 
-    /// A branch node contains a heap-allocated vector of nodes
-    Branch(Vec<N>),
+    /// A branch node contains a collection of nodes
+    Branch(C),
 }
 
 
@@ -89,10 +86,10 @@ pub trait ObjectQuery<O> {
 ///
 /// This is part of the essential features of a tree. Note that both a whole
 /// tree and its constituents implement this.
-pub trait Node<P, N, O> {
+pub trait Node<P, N, O, C> {
 
     /// The state of the node
-    fn state(&self) -> &NodeState<O, Self>;
+    fn state(&self) -> &NodeState<O, C>;
 
     /// The center point of the node
     fn center(&self) -> &P;
@@ -121,7 +118,7 @@ pub trait AssociatedData<D> {
 /// - `N` is the scalar of the vector space of points.
 /// - The tree stores objects of type `O`. These objects need to have some
 ///   notion of a position.
-pub trait PureTree<P, N, O>: ObjectQuery<O> + Node<P, N, O> {}
+pub trait PureTree<P, N, O, C>: ObjectQuery<O> + Node<P, N, O, C> {}
 
 
 /// A spatial tree with associated data
@@ -136,4 +133,4 @@ pub trait PureTree<P, N, O>: ObjectQuery<O> + Node<P, N, O> {}
 ///   notion of a position.
 /// - `D` is the kind of data associated with each node. This is computed
 ///   recursively during tree construction.
-pub trait Tree<P, N, O, D>: DataQuery<D> + AssociatedData<D> + PureTree<P, N, O> {}
+pub trait Tree<P, N, O, C, D>: DataQuery<D> + AssociatedData<D> + PureTree<P, N, O, C> {}
