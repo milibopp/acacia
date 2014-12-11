@@ -1,6 +1,7 @@
 //! A spatial tree library
 
 #![feature(phase)]
+#![feature(unboxed_closures)]
 
 
 extern crate nalgebra;
