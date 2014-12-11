@@ -149,13 +149,18 @@ impl<P, N, O, V> PureNTree<P, N, O>
 }
 
 impl<P, N, O> ObjectQuery<O> for PureNTree<P, N, O> {
-    fn query_objects(&self, recurse: |&PureNTree<P, N, O>| -> bool, f: |&O|) {
+    fn query_objects<R, F>(&self, recurse: &R, f: &mut F)
+        where R: Fn(&PureNTree<P, N, O>) -> bool,
+              F: FnMut(&O),
+    {
         match self.state {
-            NodeState::Branch(ref nodes) if recurse(self) =>
-                for node in nodes.iter() {
-                    node.query_objects(|n| recurse(n), |o| f(o))
+            NodeState::Branch(ref nodes) => 
+                if recurse.call((self,)) {
+                    for node in nodes.iter() {
+                        node.query_objects(recurse, f)
+                    }
                 },
-            NodeState::Leaf(ref obj) => f(obj),
+            NodeState::Leaf(ref obj) => f.call_mut((obj,)),
             _ => (),
         }
     }
@@ -206,15 +211,18 @@ impl<P, N, O, D> NTree<P, N, O, D> {
 impl<P, N, O, D: Clone> NTree<P, N, O, D> {
 
     /// Recompute the associated data
-    fn recompute_data(&mut self, default: D, single: |&O| -> D, combine: |&D, &D| -> D) {
+    fn recompute_data<S, C>(&mut self, default: D, single: &S, combine: &C)
+        where S: Fn(&O) -> D,
+              C: Fn(&D, &D) -> D,
+    {
         self.data = match self.state {
             NodeState::Empty => default,
-            NodeState::Leaf(ref obj) => single(obj),
+            NodeState::Leaf(ref obj) => single.call((obj,)),
             NodeState::Branch(ref mut nodes) => {
                 for node in nodes.iter_mut() {
-                    node.recompute_data(default.clone(), |o| single(o), |d1, d2| combine(d1, d2));
+                    node.recompute_data(default.clone(), single, combine);
                 }
-                nodes.iter().fold(default.clone(), |current, node| combine(&current, &node.data))
+                nodes.iter().fold(default.clone(), |current, node| combine.call((&current, &node.data)))
             },
         };
     }
@@ -256,13 +264,17 @@ impl<P, N, O, D> NTree<P, N, O, D>
     ///
     /// NOTE: this is prone to stack overflows! By calling this you effectively
     /// assert that all positions are within the tree bounds.
-    fn from_iter_raw<I: Iterator<O>>(objects: I, center: P, width: N, default: D, single: |&O| -> D, combine: |&D, &D| -> D) -> NTree<P, N, O, D> {
+    fn from_iter_raw<I, S, C>(objects: I, center: P, width: N, default: D, single: &S, combine: &C) -> NTree<P, N, O, D>
+        where I: Iterator<O>,
+              S: Fn(&O) -> D,
+              C: Fn(&D, &D) -> D,
+    {
         let mut objects = objects;
         let mut tree = NTree::empty(center, width, default.clone());
         for object in objects {
             tree.insert(object, default.clone());
         }
-        tree.recompute_data(default.clone(), |o| single(o), |d1, d2| combine(d1, d2));
+        tree.recompute_data(default.clone(), single, combine);
         tree
     }
 }
@@ -289,14 +301,18 @@ impl<P, N, O, D, V> NTree<P, N, O, D>
     ///   closure.
     /// - More complex structures will combine their constituent data by
     ///   subsequent invokations of the `combine` function as an operator.
-    pub fn from_iter<I: Iterator<O>>(objects: I, default: D, single: |&O| -> D, combine: |&D, &D| -> D) -> NTree<P, N, O, D> {
+    pub fn from_iter<I, S, C>(objects: I, default: D, single: &S, combine: &C) -> NTree<P, N, O, D>
+        where I: Iterator<O>,
+              S: Fn(&O) -> D,
+              C: Fn(&D, &D) -> D,
+    {
         let _2: N = cast(2.0f64).unwrap();
         let vec: Vec<O> = objects.collect();
         let (inf, sup) = limits(vec.iter().map(|obj| obj.position()));
         let center = (inf + sup.to_vec()) / _2;
         let width = _2 * range(0, Dim::dim(None::<P>))
             .fold(zero(), |max, n| partial_max(max, sup[n] - inf[n]).unwrap());
-        NTree::from_iter_raw(vec.into_iter(), center, width, default, |o| single(o), |d1, d2| combine(d1, d2))
+        NTree::from_iter_raw(vec.into_iter(), center, width, default, single, combine)
     }
 
     /// Same as `from_iter` but with geometrical constraints
@@ -309,7 +325,11 @@ impl<P, N, O, D, V> NTree<P, N, O, D>
     /// - `minimal_width` is the minimal width of the root node of the tree.
     ///   This may be increased by the geometrical requirements of the objects,
     ///   thus only a lower bound on the width can be imposed on the tree.
-    pub fn from_iter_with_geometry<I: Iterator<O>>(objects: I, center: P, minimal_width: N, default: D, single: |&O| -> D, combine: |&D, &D| -> D) -> NTree<P, N, O, D> {
+    pub fn from_iter_with_geometry<I, S, C>(objects: I, center: P, minimal_width: N, default: D, single: &S, combine: &C) -> NTree<P, N, O, D>
+        where I: Iterator<O>,
+              S: Fn(&O) -> D,
+              C: Fn(&D, &D) -> D,
+    {
         let _2: N = cast(2.0f64).unwrap();
         let vec: Vec<O> = objects.collect();
         let (inf, sup) = limits(vec.iter().map(|obj| obj.position()));
@@ -322,7 +342,7 @@ impl<P, N, O, D, V> NTree<P, N, O, D>
                     ).unwrap()
                 ).unwrap()
             );
-        NTree::from_iter_raw(vec.into_iter(), center, width, default, |o| single(o), |d1, d2| combine(d1, d2))
+        NTree::from_iter_raw(vec.into_iter(), center, width, default, single, combine)
     }
 }
 
@@ -347,25 +367,31 @@ impl<P, N, O, D> AssociatedData<D> for NTree<P, N, O, D> {
 }
 
 impl<P, N, O, D> DataQuery<D> for NTree<P, N, O, D> {
-    fn query_data(&self, recurse: |&NTree<P, N, O, D>| -> bool, f: |&D|) {
+    fn query_data<R, F>(&self, recurse: &R, f: &mut F)
+        where R: Fn(&NTree<P, N, O, D>) -> bool,
+              F: FnMut(&D),
+    {
         match self.state {
-            NodeState::Branch(ref nodes) if recurse(self) =>
+            NodeState::Branch(ref nodes) if recurse.call((self,)) =>
                 for node in nodes.iter() {
-                    node.query_data(|n| recurse(n), |d| f(d))
+                    node.query_data(recurse, f)
                 },
-            _ => f(&self.data),
+            _ => f.call_mut((&self.data,)),
         }
     }
 }
 
 impl<P, N, O, D> ObjectQuery<O> for NTree<P, N, O, D> {
-    fn query_objects(&self, recurse: |&NTree<P, N, O, D>| -> bool, f: |&O|) {
+    fn query_objects<R, F>(&self, recurse: &R, f: &mut F)
+        where R: Fn(&NTree<P, N, O, D>) -> bool,
+              F: FnMut(&O),
+    {
         match self.state {
-            NodeState::Branch(ref nodes) if recurse(self) =>
+            NodeState::Branch(ref nodes) if recurse.call((self,)) =>
                 for node in nodes.iter() {
-                    node.query_objects(|n| recurse(n), |o| f(o))
+                    node.query_objects(recurse, f)
                 },
-            NodeState::Leaf(ref obj) => f(obj),
+            NodeState::Leaf(ref obj) => f.call_mut((obj,)),
             _ => (),
         }
     }
@@ -378,11 +404,12 @@ impl<P, N, O, D> Tree<P, N, O, Vec<NTree<P, N, O, D>>, D> for NTree<P, N, O, D> 
 #[cfg(test)]
 mod test {
     use super::{NTree, PureNTree, subdivide, branch_dispatch};
-    use tree::{NodeState, Node, AssociatedData, DataQuery};
+    use tree::{NodeState, Node, AssociatedData, DataQuery, ObjectQuery};
     use util::Entry;
     use std::num::Float;
     use std::rand::distributions::{IndependentSample, Range};
     use std::rand::task_rng;
+    use std::iter::AdditiveIterator;
     use test::Bencher;
     use nalgebra::{ApproxEq, Pnt2, Pnt3, FloatPnt, Vec2, Vec3, zero, Norm, Orig};
     use quickcheck::TestResult;
@@ -507,7 +534,7 @@ mod test {
     #[test]
     fn ntree_from_empty_vec() {
         let tree: NTree<Pnt2<f64>, f64, Entry<uint, Pnt2<f64>>, ()> =
-            NTree::from_iter(vec![].into_iter(), (), |_| (), |_, _| ());
+            NTree::from_iter(vec![].into_iter(), (), &|_| (), &|_, _| ());
         match tree.state {
             NodeState::Empty => (),
             _ => panic!(),
@@ -519,7 +546,7 @@ mod test {
         let tree = NTree::from_iter(
             data.iter()
             .map(|&(i, x, y)| Entry { object: i, position: Pnt2::new(x, y) }),
-            (), |_| (), |_, _| ()
+            (), &|_| (), &|_, _| ()
         );
         (data.len() >= 2) == (
             match tree.state {
@@ -534,7 +561,7 @@ mod test {
         let tree = NTree::from_iter(
             data.iter()
             .map(|&(i, x, y)| Entry { object: i, position: Pnt2::new(x, y) }),
-            (), |_| (), |_, _| ()
+            (), &|_| (), &|_, _| ()
         );
         (data.len() == 1) == (
             match tree.state {
@@ -611,8 +638,8 @@ mod test {
             NTree::from_iter(
                 vec.iter().map(|a| a.clone()),
                 (Vec2::new(0.0f64, 0.0), 0.0f64),
-                |obj| (obj.position.to_vec() * obj.object, obj.object),
-                |&(mps, ms), &(mp, m)| (mps + mp, ms + m)
+                &|obj| (obj.position.to_vec() * obj.object, obj.object),
+                &|&(mps, ms), &(mp, m)| (mps + mp, ms + m)
             )
         })
     }
@@ -633,9 +660,37 @@ mod test {
                 vec.iter().map(|a| a.clone()),
                 Orig::orig(), 2.0,
                 (Vec2::new(0.0f64, 0.0), 0.0f64),
-                |obj| (obj.position.to_vec() * obj.object, obj.object),
-                |&(mps, ms), &(mp, m)| (mps + mp, ms + m)
+                &|obj| (obj.position.to_vec() * obj.object, obj.object),
+                &|&(mps, ms), &(mp, m)| (mps + mp, ms + m)
             )
+        })
+    }
+
+    #[bench]
+    fn pure_ntree_query_objects(b: &mut Bencher) {
+        let coord_dist = Range::new(-1.0f64, 1.0);
+        let mut rng = task_rng();
+        let objects: Vec<_> = range(0u, 1000).map(|_| Entry {
+            object: (),
+            position: Pnt2::new(
+                coord_dist.ind_sample(&mut rng),
+                coord_dist.ind_sample(&mut rng)
+            ),
+        }).collect();
+        let search_radius = 0.3;
+        let tree = PureNTree::from_iter(objects.clone().into_iter());
+        b.iter(|| {
+            // Count the number of objects within the search radius 10000 times
+            range(0u, 10000)
+                .map(|_| {
+                    let mut i = 0u;
+                    tree.query_objects(
+                        &|node| node.center().dist(&Orig::orig()) < search_radius + *node.width() / 2.0,
+                        &mut |other| if other.position.dist(&Orig::orig()) < search_radius {i += 1},
+                    );
+                    i
+                })
+                .sum()
         })
     }
 
@@ -666,8 +721,8 @@ mod test {
                 Entry { object: m, position: Pnt2::new(x, y) }
             ),
             (Vec2::new(0.0f64, 0.0), 0.0f64),
-            |obj| (obj.position.to_vec() * obj.object, obj.object),
-            |&(mps, ms), &(mp, m)| (mps + mp, ms + m)
+            &|obj| (obj.position.to_vec() * obj.object, obj.object),
+            &|&(mps, ms), &(mp, m)| (mps + mp, ms + m)
         );
         let (tree_mps, tree_ms) = tree.data;
         // …and compare
@@ -727,8 +782,8 @@ mod test {
             orig,
             test_point.as_vec().norm() * 2.0,
             (orig, zero()),
-            |obj| (obj.position, obj.object),
-            |&(com1, m1), &(com2, m2)|
+            &|obj| (obj.position, obj.object),
+            &|&(com1, m1), &(com2, m2)|
                 if m1 + m2 > zero() {(
                     orig + (com1.to_vec() * m1 + com2.to_vec() * m2) / (m1 + m2),
                     m1 + m2,
@@ -740,13 +795,13 @@ mod test {
         let theta = 0.5; // A bit arbitrary but this appears to work
         let mut tree_gravity: Vec3<_> = zero();
         tree.query_data(
-            |node| {
+            &|node| {
                 let &(ref center_of_mass, _) = node.data();
                 let d = FloatPnt::dist(&test_point, center_of_mass);
                 let delta = FloatPnt::dist(node.center(), center_of_mass);
                 d < *node.width() / theta + delta
             },
-            |&(com, m)| {
+            &mut |&(com, m)| {
                 tree_gravity = tree_gravity + newton((m, com), test_point);
             },
         );
