@@ -8,6 +8,11 @@ test coverage, but both the API and the internals will likely change in the
 future to improve interface and performance.
 
 
+## Status
+
+[![Build Status](https://travis-ci.org/aepsil0n/acacia.svg?branch=master)](https://travis-ci.org/aepsil0n/acacia)
+
+
 ## Features
 
 - Tree construction from a simple iterator.
