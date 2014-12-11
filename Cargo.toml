@@ -4,6 +4,9 @@ name = "acacia"
 version = "0.0.1"
 authors = ["Emilia Bopp <Emilia.bopp@aepsil0n.de>"]
 
+[profile.test]
+debug = false
+
 [dependencies.nalgebra]
 git = "https://github.com/sebcrozet/nalgebra"
 
