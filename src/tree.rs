@@ -50,8 +50,11 @@ pub trait DataQuery<D> {
     /// - At each branching node the tree is only recursed further, iff
     ///   `recurse(&node)`.
     /// - `f` is called on the associated data of every node reached by the
-    ///   recursion.
-    fn query_data(&self, recurse: |&Self| -> bool, f: |&D|);
+    ///   recursion. This may mutably borrow its environment, which is currently
+    ///   the only way to obtain a result from this function.
+    fn query_data<R, F>(&self, recurse: &R, f: &mut F)
+        where R: Fn(&Self) -> bool,
+              F: FnMut(&D);
 }
 
 
@@ -77,8 +80,11 @@ pub trait ObjectQuery<O> {
     ///
     /// - At each branching node the tree is only recursed further, iff
     ///   `recurse(&node)`.
-    /// - `f` is the callback function.
-    fn query_objects(&self, recurse: |&Self| -> bool, f: |&O|);
+    /// - `f` is the callback function. This may mutably borrow its environment,
+    ///   which is currently the only way to obtain a result from this function.
+    fn query_objects<R, F>(&self, recurse: &R, f: &mut F)
+        where R: Fn(&Self) -> bool,
+              F: FnMut(&O);
 }
 
 
