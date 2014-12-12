@@ -3,10 +3,13 @@ language: rust
 env:
     global:
         - secure: NXg6ReDiwcXU2qFp5ewZ+89XPR6jQ3rmKJBK2tAbzm8uTKCM5tfQxYjYVibKL494INJynpxfFDxdcjfYsaSK32f5iS+SWe2iH/Oggnr6Tv1Q3ugx7YY9X+S+m3NejspcrD3RpNEYcFzzkkZniAIWOwozNEP7yHkz1cSgrQiyvzo=
-    script:
-        - cargo build
-        - cargo test
-        - cargo bench
+
+script:
+    - rustc --version
+    - cargo --version
+    - cargo build --verbose
+    - cargo test --verbose
+    - cargo bench --verbose
 
 after_script:
     - cargo doc
