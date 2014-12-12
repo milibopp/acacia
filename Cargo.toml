@@ -10,8 +10,8 @@ debug = false
 [dependencies.nalgebra]
 git = "https://github.com/sebcrozet/nalgebra"
 
-[dependencies.quickcheck]
+[dev-dependencies.quickcheck]
 git = "https://github.com/BurntSushi/quickcheck"
 
-[dependencies.quickcheck_macros]
+[dev-dependencies.quickcheck_macros]
 git = "https://github.com/BurntSushi/quickcheck"
