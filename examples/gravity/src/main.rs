@@ -6,8 +6,7 @@ use std::rand::distributions::{Range, IndependentSample};
 use std::num::Float;
 use nalgebra::{Pnt3, Vec3, FloatPnt, Norm, Orig, zero};
 use acacia::ntree::NTree;
-use acacia::tree::{DataQuery, Node, AssociatedData};
-use acacia::util::Positionable;
+use acacia::tree::{DataQuery, Node, AssociatedData, Positionable};
 
 /// Point mass
 struct PointMass {
@@ -15,7 +14,7 @@ struct PointMass {
     position: Pnt3<f64>,
 }
 
-impl<'a> Positionable<Pnt3<f64>> for &'a PointMass {
+impl Positionable<Pnt3<f64>> for PointMass {
     fn position(&self) -> Pnt3<f64> {
         self.position
     }
@@ -55,11 +54,11 @@ fn main() {
         (origin, 0.0),
 
         // This closure associates data to a leaf node from its object.
-        |obj| (obj.position, obj.mass),
+        &|obj| (obj.position, obj.mass),
 
         // This combines two pieces of associated data and thus prescribes how
         // branch nodes on higher levels get their associated data.
-        |&(com1, m1), &(com2, m2)|
+        &|&(com1, m1), &(com2, m2)|
             if m1 + m2 > 0.0 {(
                 origin + (com1.to_vec() * m1 + com2.to_vec() * m2) / (m1 + m2),
                 m1 + m2,
@@ -78,7 +77,7 @@ fn main() {
 
         // This is the recursion criterion. If a branch node passes this, the
         // query continues on its children.
-        |node| {
+        &|node| {
             let &(ref center_of_mass, _) = node.data();
             let d = test_point.dist(center_of_mass);
             let delta: f64 = node.center().dist(center_of_mass);
@@ -87,7 +86,7 @@ fn main() {
 
         // This collects our force term from each piece of associated data the
         // tree encounters during recursion.
-        |&(center_of_mass, mass)| {
+        &mut |&(center_of_mass, mass)| {
             tree_gravity = tree_gravity + newton(mass, center_of_mass, test_point);
         },
     );
