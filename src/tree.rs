@@ -149,6 +149,15 @@ pub trait Positionable<P> {
     fn position(&self) -> P;
 }
 
+impl<'a, P, O> Positionable<P> for &'a O
+    where O: Positionable<P>
+{
+    fn position(&self) -> P {
+        // Explicitly dereference here to avoid infinite recursion
+        (*self).position()
+    }
+}
+
 
 /// A positioned object
 ///
@@ -170,5 +179,26 @@ impl<O, P> Positionable<P> for Positioned<O, P>
 {
     fn position(&self) -> P {
         self.position
+    }
+}
+
+
+#[cfg(test)]
+mod test {
+
+    use super::{Positionable, Positioned};
+
+    #[test]
+    fn positioned_position() {
+        assert_eq!(Positioned { object: 1u, position: 14i }.position(), 14i);
+    }
+
+    #[test]
+    fn positionable_by_ref() {
+        fn twice_pos<O: Positionable<int>>(obj: O) -> int {
+            2 * obj.position()
+        }
+        let obj = Positioned { object: 1u, position: 77i };
+        assert_eq!(twice_pos(&obj), 154i);
     }
 }
