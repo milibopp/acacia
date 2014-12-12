@@ -21,4 +21,5 @@ extern crate test;
 pub mod ntree;
 #[warn(missing_docs)]
 pub mod tree;
+#[warn(missing_docs)]
 pub mod util;
