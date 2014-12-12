@@ -2,7 +2,7 @@
 
 #![feature(phase)]
 #![feature(unboxed_closures)]
-
+#![warn(missing_docs)]
 
 extern crate nalgebra;
 
@@ -17,9 +17,6 @@ extern crate nalgebra;
 #[cfg(test)]
 extern crate test;
 
-#[warn(missing_docs)]
 pub mod ntree;
-#[warn(missing_docs)]
 pub mod tree;
-#[warn(missing_docs)]
 pub mod util;
