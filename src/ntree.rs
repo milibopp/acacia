@@ -5,9 +5,10 @@ use std::num::{Float, Int, cast};
 use std::cmp::partial_max;
 use std::iter::AdditiveIterator;
 use std::mem;
-use util::{Positionable, limits};
+use util::limits;
 use tree::{
     NodeState, Tree, PureTree, DataQuery, ObjectQuery, AssociatedData, Node,
+    Positionable,
 };
 
 
@@ -404,8 +405,9 @@ impl<P, N, O, D> Tree<P, N, O, Vec<NTree<P, N, O, D>>, D> for NTree<P, N, O, D> 
 #[cfg(test)]
 mod test {
     use super::{NTree, PureNTree, subdivide, branch_dispatch};
-    use tree::{NodeState, Node, AssociatedData, DataQuery, ObjectQuery};
-    use util::Entry;
+    use tree::{
+        NodeState, Node, AssociatedData, DataQuery, ObjectQuery, Positioned
+    };
     use std::num::Float;
     use std::rand::distributions::{IndependentSample, Range};
     use std::rand::task_rng;
@@ -495,7 +497,7 @@ mod test {
     #[test]
     fn ntree_insert_into_empty() {
         let mut n = NTree::empty(Pnt2::new(0.0f32, 0.0), 10.0f32, ());
-        n.insert(Entry { position: Pnt2::new(1.0f32, 0.0), object: 1i }, ());
+        n.insert(Positioned { position: Pnt2::new(1.0f32, 0.0), object: 1i }, ());
         match n.state {
             NodeState::Leaf(entry) => assert_eq!(entry.object, 1),
             _ => panic!("node is no leaf")
@@ -505,8 +507,8 @@ mod test {
     #[test]
     fn ntree_insert_into_leaf() {
         let mut n = NTree::empty(Pnt2::new(0.0f64, 0.0), 10.0f64, ());
-        n.insert(Entry { object: 1i, position: Pnt2::new(1.0f64, -2.0) }, ());
-        n.insert(Entry { object: 2i, position: Pnt2::new(2.0, 1.0) }, ());
+        n.insert(Positioned { object: 1i, position: Pnt2::new(1.0f64, -2.0) }, ());
+        n.insert(Positioned { object: 2i, position: Pnt2::new(2.0, 1.0) }, ());
         match n.state {
             NodeState::Branch(nodes) => {
                 for &k in [1, 2].iter() {
@@ -523,8 +525,8 @@ mod test {
     #[test]
     fn ntree_branch_on_second_insert() {
         let mut n = NTree::empty(Pnt2::new(0.0f64, 0.0), 8.0f64, ());
-        n.insert(Entry { object: 1u, position: Pnt2::new(1.0, 2.0) }, ());
-        n.insert(Entry { object: 1u, position: Pnt2::new(2.0, -3.0) }, ());
+        n.insert(Positioned { object: 1u, position: Pnt2::new(1.0, 2.0) }, ());
+        n.insert(Positioned { object: 1u, position: Pnt2::new(2.0, -3.0) }, ());
         match n.state {
             NodeState::Branch(_) => (),
             _ => panic!("node is no branch"),
@@ -533,7 +535,7 @@ mod test {
 
     #[test]
     fn ntree_from_empty_vec() {
-        let tree: NTree<Pnt2<f64>, f64, Entry<uint, Pnt2<f64>>, ()> =
+        let tree: NTree<Pnt2<f64>, f64, Positioned<uint, Pnt2<f64>>, ()> =
             NTree::from_iter(vec![].into_iter(), (), &|_| (), &|_, _| ());
         match tree.state {
             NodeState::Empty => (),
@@ -545,7 +547,7 @@ mod test {
     fn ntree_from_iter_more_than_two_branches(data: Vec<(uint, f64, f64)>) -> bool {
         let tree = NTree::from_iter(
             data.iter()
-            .map(|&(i, x, y)| Entry { object: i, position: Pnt2::new(x, y) }),
+            .map(|&(i, x, y)| Positioned { object: i, position: Pnt2::new(x, y) }),
             (), &|_| (), &|_, _| ()
         );
         (data.len() >= 2) == (
@@ -560,7 +562,7 @@ mod test {
     fn ntree_from_iter_one_is_a_leaf(data: Vec<(uint, f64, f64)>) -> bool {
         let tree = NTree::from_iter(
             data.iter()
-            .map(|&(i, x, y)| Entry { object: i, position: Pnt2::new(x, y) }),
+            .map(|&(i, x, y)| Positioned { object: i, position: Pnt2::new(x, y) }),
             (), &|_| (), &|_, _| ()
         );
         (data.len() == 1) == (
@@ -575,7 +577,7 @@ mod test {
     fn pure_ntree_quad_from_iter_raw_1000(b: &mut Bencher) {
         let coord_dist = Range::new(-1.0f64, 1.0);
         let mut rng = task_rng();
-        let vec = Vec::from_fn(1000, |_| Entry {
+        let vec = Vec::from_fn(1000, |_| Positioned {
             object: 1i,
             position: Pnt2::new(
                 coord_dist.ind_sample(&mut rng),
@@ -594,7 +596,7 @@ mod test {
     fn pure_ntree_quad_from_iter_1000(b: &mut Bencher) {
         let coord_dist = Range::new(-1.0f64, 1.0);
         let mut rng = task_rng();
-        let vec = Vec::from_fn(1000, |_| Entry {
+        let vec = Vec::from_fn(1000, |_| Positioned {
             object: 1i,
             position: Pnt2::new(
                 coord_dist.ind_sample(&mut rng),
@@ -610,7 +612,7 @@ mod test {
     fn pure_ntree_oc_from_iter_1000(b: &mut Bencher) {
         let coord_dist = Range::new(-1.0f64, 1.0);
         let mut rng = task_rng();
-        let vec = Vec::from_fn(1000, |_| Entry {
+        let vec = Vec::from_fn(1000, |_| Positioned {
             object: 1i,
             position: Pnt3::new(
                 coord_dist.ind_sample(&mut rng),
@@ -627,7 +629,7 @@ mod test {
     fn ntree_quad_with_center_of_mass_from_iter_1000(b: &mut Bencher) {
         let coord_dist = Range::new(-1.0f64, 1.0);
         let mut rng = task_rng();
-        let vec = Vec::from_fn(1000, |_| Entry {
+        let vec = Vec::from_fn(1000, |_| Positioned {
             object: 1.0,
             position: Pnt2::new(
                 coord_dist.ind_sample(&mut rng),
@@ -648,7 +650,7 @@ mod test {
     fn ntree_quad_with_center_of_mass_from_iter_raw_1000(b: &mut Bencher) {
         let coord_dist = Range::new(-1.0f64, 1.0);
         let mut rng = task_rng();
-        let vec = Vec::from_fn(1000, |_| Entry {
+        let vec = Vec::from_fn(1000, |_| Positioned {
             object: 1.0,
             position: Pnt2::new(
                 coord_dist.ind_sample(&mut rng),
@@ -670,7 +672,7 @@ mod test {
     fn pure_ntree_query_objects(b: &mut Bencher) {
         let coord_dist = Range::new(-1.0f64, 1.0);
         let mut rng = task_rng();
-        let objects: Vec<_> = range(0u, 1000).map(|_| Entry {
+        let objects: Vec<_> = range(0u, 1000).map(|_| Positioned {
             object: (),
             position: Pnt2::new(
                 coord_dist.ind_sample(&mut rng),
@@ -718,7 +720,7 @@ mod test {
         // Now use the tree
         let tree = NTree::from_iter(
             data.iter().map(|&(m, (x, y))|
-                Entry { object: m, position: Pnt2::new(x, y) }
+                Positioned { object: m, position: Pnt2::new(x, y) }
             ),
             (Vec2::new(0.0f64, 0.0), 0.0f64),
             &|obj| (obj.position.to_vec() * obj.object, obj.object),
@@ -777,7 +779,7 @@ mod test {
         let orig: Pnt3<f64> = Orig::orig();
         let tree = NTree::from_iter_with_geometry(
             starfield.iter().map(|&(m, (x, y, z))|
-                Entry { object: m, position: Pnt3::new(x, y, z) }
+                Positioned { object: m, position: Pnt3::new(x, y, z) }
             ),
             orig,
             test_point.as_vec().norm() * 2.0,

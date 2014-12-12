@@ -1,28 +1,6 @@
 //! A variety of useful things
-//!
-//! TODO: sort this out
 
 use nalgebra::{POrd, Orig};
-
-/// A type that has a notion of a position
-pub trait Positionable<P> {
-    fn position(&self) -> P;
-}
-
-
-#[deriving(Clone)]
-pub struct Entry<O, P> {
-    pub object: O,
-    pub position: P,
-}
-
-impl<O, P> Positionable<P> for Entry<O, P>
-    where P: Copy
-{
-    fn position(&self) -> P {
-        self.position
-    }
-}
 
 
 /// Find infimum and supremum of a set of points
@@ -45,8 +23,6 @@ impl<O, P> Positionable<P> for Entry<O, P>
 /// # Parameters
 ///
 /// - `values` is a by-reference iterator over points
-///
-/// TODO: maybe this can be integrated into nalgebra?
 pub fn limits<I, P>(values: I) -> (P, P)
     where I: Iterator<P>,
           P: POrd + Orig + Copy,
