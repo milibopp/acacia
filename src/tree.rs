@@ -140,3 +140,65 @@ pub trait PureTree<P, N, O, C>: ObjectQuery<O> + Node<P, N, O, C> {}
 /// - `D` is the kind of data associated with each node. This is computed
 ///   recursively during tree construction.
 pub trait Tree<P, N, O, C, D>: DataQuery<D> + AssociatedData<D> + PureTree<P, N, O, C> {}
+
+
+/// A type that has a notion of a position
+pub trait Positionable<P> {
+
+    /// The position
+    fn position(&self) -> P;
+}
+
+impl<'a, P, O> Positionable<P> for &'a O
+    where O: Positionable<P>
+{
+    fn position(&self) -> P {
+        // Explicitly dereference here to avoid infinite recursion
+        (*self).position()
+    }
+}
+
+
+/// A positioned object
+///
+/// This is the most simple generic implementation of Positionable and serves as
+/// a wrapper for types that do not have a notion of a position themselves. It
+/// equips these with an additional generic position as an attribute.
+#[deriving(Clone)]
+pub struct Positioned<O, P> {
+
+    /// The object wrapped in this type
+    pub object: O,
+
+    /// The position stored along with it
+    pub position: P,
+}
+
+impl<O, P> Positionable<P> for Positioned<O, P>
+    where P: Copy
+{
+    fn position(&self) -> P {
+        self.position
+    }
+}
+
+
+#[cfg(test)]
+mod test {
+
+    use super::{Positionable, Positioned};
+
+    #[test]
+    fn positioned_position() {
+        assert_eq!(Positioned { object: 1u, position: 14i }.position(), 14i);
+    }
+
+    #[test]
+    fn positionable_by_ref() {
+        fn twice_pos<O: Positionable<int>>(obj: O) -> int {
+            2 * obj.position()
+        }
+        let obj = Positioned { object: 1u, position: 77i };
+        assert_eq!(twice_pos(&obj), 154i);
+    }
+}
