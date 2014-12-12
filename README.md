@@ -52,8 +52,8 @@ associated data to compute values for branch nodes.
 
 ```rust
     (origin, 0.0),
-    |obj| (obj.position, obj.mass),
-    |&(com1, m1), &(com2, m2)|
+    &|obj| (obj.position, obj.mass),
+    &|&(com1, m1), &(com2, m2)|
         if m1 + m2 > 0.0 {(
             origin + (com1.to_vec() * m1 + com2.to_vec() * m2) / (m1 + m2),
             m1 + m2,
@@ -76,14 +76,14 @@ encounters during this recursion.
 ```rust
 let mut tree_gravity: Vec3<f64> = zero();
 tree.query_data(
-    |node| {
+    &|node| {
         let &(ref center_of_mass, _) = node.data();
         let d = test_point.dist(center_of_mass);
         let delta: f64 = node.center().dist(center_of_mass);
         d < 2.0 * *node.width() + delta
     },
 
-    |&(center_of_mass, mass)| {
+    &mut |&(center_of_mass, mass)| {
         tree_gravity = tree_gravity + newton(mass, center_of_mass, test_point);
     },
 );
