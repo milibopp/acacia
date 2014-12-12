@@ -140,3 +140,35 @@ pub trait PureTree<P, N, O, C>: ObjectQuery<O> + Node<P, N, O, C> {}
 /// - `D` is the kind of data associated with each node. This is computed
 ///   recursively during tree construction.
 pub trait Tree<P, N, O, C, D>: DataQuery<D> + AssociatedData<D> + PureTree<P, N, O, C> {}
+
+
+/// A type that has a notion of a position
+pub trait Positionable<P> {
+
+    /// The position
+    fn position(&self) -> P;
+}
+
+
+/// A positioned object
+///
+/// This is the most simple generic implementation of Positionable and serves as
+/// a wrapper for types that do not have a notion of a position themselves. It
+/// equips these with an additional generic position as an attribute.
+#[deriving(Clone)]
+pub struct Positioned<O, P> {
+
+    /// The object wrapped in this type
+    pub object: O,
+
+    /// The position stored along with it
+    pub position: P,
+}
+
+impl<O, P> Positionable<P> for Positioned<O, P>
+    where P: Copy
+{
+    fn position(&self) -> P {
+        self.position
+    }
+}
