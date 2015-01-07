@@ -164,7 +164,7 @@ impl<'a, P, O> Positionable<P> for &'a O
 /// This is the most simple generic implementation of Positionable and serves as
 /// a wrapper for types that do not have a notion of a position themselves. It
 /// equips these with an additional generic position as an attribute.
-#[deriving(Clone)]
+#[derive(Clone)]
 pub struct Positioned<O, P> {
 
     /// The object wrapped in this type
