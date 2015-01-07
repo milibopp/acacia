@@ -3,6 +3,7 @@
 use nalgebra::{Dim, BaseFloat, FloatPnt, FloatVec, zero, POrd};
 use std::num::{Float, Int, cast};
 use std::cmp::partial_max;
+use std::ops::{Index, IndexMut};
 use std::iter::AdditiveIterator;
 use std::mem;
 use util::limits;
@@ -22,7 +23,7 @@ use tree::{
 /// - The `old_center` is the center point of the (old) node.
 /// - The `old_width` is its width.
 fn subdivide<P, N>(old_center: &P, old_width: &N) -> Vec<(P, N)>
-    where P: Dim + Index<uint, N> + IndexMut<uint, N> + Copy,
+    where P: Dim + Index<uint, Output=N> + IndexMut<uint, Output=N> + Copy,
           N: BaseFloat,
 {
     let _2 = cast(2.0f64).unwrap();
@@ -46,7 +47,7 @@ fn subdivide<P, N>(old_center: &P, old_width: &N) -> Vec<(P, N)>
 
 
 fn branch_dispatch<P, N>(center: &P, point: &P) -> uint
-    where P: Dim + Index<uint, N> + IndexMut<uint, N>,
+    where P: Dim + Index<uint, Output=N> + IndexMut<uint, Output=N>,
           N: BaseFloat,
 {
     let dim = Dim::dim(None::<P>);
@@ -76,7 +77,7 @@ impl<O, P, N> PureNTree<O, P, N> {
 
 impl<P, N, O, V> PureNTree<P, N, O>
     where O: Positionable<P>,
-          P: FloatPnt<N, V> + Index<uint, N> + IndexMut<uint, N> + Copy + POrd,
+          P: FloatPnt<N, V> + Index<uint, Output=N> + IndexMut<uint, Output=N> + Copy + POrd,
           V: FloatVec<N>,
           N: BaseFloat,
 {
@@ -84,7 +85,7 @@ impl<P, N, O, V> PureNTree<P, N, O>
     ///
     /// NOTE: this is prone to stack overflows! By calling this you effectively
     /// assert that all positions are within the tree bounds.
-    fn from_iter_raw<I: Iterator<O>>(iter: I, center: P, width: N) -> PureNTree<P, N, O> {
+    fn from_iter_raw<I: Iterator<Item=O>>(iter: I, center: P, width: N) -> PureNTree<P, N, O> {
         let mut tree = PureNTree::empty(center, width);
         let mut iter = iter;
         for object in iter {
@@ -94,7 +95,7 @@ impl<P, N, O, V> PureNTree<P, N, O>
     }
 
     /// Construct a pure tree from an iterator
-    pub fn from_iter<I: Iterator<O>>(iter: I) -> PureNTree<P, N, O> {
+    pub fn from_iter<I: Iterator<Item=O>>(iter: I) -> PureNTree<P, N, O> {
         let _2: N = cast(2.0f64).unwrap();
         let vec: Vec<O> = iter.collect();
         let (inf, sup) = limits(vec.iter().map(|obj| obj.position()));
@@ -105,7 +106,7 @@ impl<P, N, O, V> PureNTree<P, N, O>
     }
 
     /// Construct a pure tree from an iterator with geometric constraints
-    pub fn from_iter_with_geometry<I: Iterator<O>>(iter: I, center: P, minimal_width: N) -> PureNTree<P, N, O> {
+    pub fn from_iter_with_geometry<I: Iterator<Item=O>>(iter: I, center: P, minimal_width: N) -> PureNTree<P, N, O> {
         let _2: N = cast(2.0f64).unwrap();
         let vec: Vec<O> = iter.collect();
         let (inf, sup) = limits(vec.iter().map(|obj| obj.position()));
@@ -124,7 +125,7 @@ impl<P, N, O, V> PureNTree<P, N, O>
 
 impl<P, N, O, V> PureNTree<P, N, O>
     where O: Positionable<P>,
-          P: FloatPnt<N, V> + Index<uint, N> + IndexMut<uint, N> + Copy,
+          P: FloatPnt<N, V> + Index<uint, Output=N> + IndexMut<uint, Output=N> + Copy,
           N: BaseFloat,
 {
     fn insert(&mut self, object: O) {
@@ -156,12 +157,12 @@ impl<P, N, O> ObjectQuery<O> for PureNTree<P, N, O> {
     {
         match self.state {
             NodeState::Branch(ref nodes) => 
-                if recurse.call((self,)) {
+                if recurse(self) {
                     for node in nodes.iter() {
                         node.query_objects(recurse, f)
                     }
                 },
-            NodeState::Leaf(ref obj) => f.call_mut((obj,)),
+            NodeState::Leaf(ref obj) => f(obj),
             _ => (),
         }
     }
@@ -218,12 +219,12 @@ impl<P, N, O, D: Clone> NTree<P, N, O, D> {
     {
         self.data = match self.state {
             NodeState::Empty => default,
-            NodeState::Leaf(ref obj) => single.call((obj,)),
+            NodeState::Leaf(ref obj) => single(obj),
             NodeState::Branch(ref mut nodes) => {
                 for node in nodes.iter_mut() {
                     node.recompute_data(default.clone(), single, combine);
                 }
-                nodes.iter().fold(default.clone(), |current, node| combine.call((&current, &node.data)))
+                nodes.iter().fold(default.clone(), |current, node| combine(&current, &node.data))
             },
         };
     }
@@ -231,7 +232,7 @@ impl<P, N, O, D: Clone> NTree<P, N, O, D> {
 
 impl<P, N, O, D> NTree<P, N, O, D>
     where O: Positionable<P>,
-          P: Dim + Index<uint, N> + IndexMut<uint, N> + Copy,
+          P: Dim + Index<uint, Output=N> + IndexMut<uint, Output=N> + Copy,
           N: BaseFloat,
           D: Clone,
 {
@@ -266,7 +267,7 @@ impl<P, N, O, D> NTree<P, N, O, D>
     /// NOTE: this is prone to stack overflows! By calling this you effectively
     /// assert that all positions are within the tree bounds.
     fn from_iter_raw<I, S, C>(objects: I, center: P, width: N, default: D, single: &S, combine: &C) -> NTree<P, N, O, D>
-        where I: Iterator<O>,
+        where I: Iterator<Item=O>,
               S: Fn(&O) -> D,
               C: Fn(&D, &D) -> D,
     {
@@ -282,7 +283,7 @@ impl<P, N, O, D> NTree<P, N, O, D>
 
 impl<P, N, O, D, V> NTree<P, N, O, D>
     where O: Positionable<P>,
-          P: FloatPnt<N, V> + Index<uint, N> + IndexMut<uint, N> + Copy + POrd,
+          P: FloatPnt<N, V> + Index<uint, Output=N> + IndexMut<uint, Output=N> + Copy + POrd,
           V: FloatVec<N>,
           N: BaseFloat,
           D: Clone,
@@ -303,7 +304,7 @@ impl<P, N, O, D, V> NTree<P, N, O, D>
     /// - More complex structures will combine their constituent data by
     ///   subsequent invokations of the `combine` function as an operator.
     pub fn from_iter<I, S, C>(objects: I, default: D, single: &S, combine: &C) -> NTree<P, N, O, D>
-        where I: Iterator<O>,
+        where I: Iterator<Item=O>,
               S: Fn(&O) -> D,
               C: Fn(&D, &D) -> D,
     {
@@ -327,7 +328,7 @@ impl<P, N, O, D, V> NTree<P, N, O, D>
     ///   This may be increased by the geometrical requirements of the objects,
     ///   thus only a lower bound on the width can be imposed on the tree.
     pub fn from_iter_with_geometry<I, S, C>(objects: I, center: P, minimal_width: N, default: D, single: &S, combine: &C) -> NTree<P, N, O, D>
-        where I: Iterator<O>,
+        where I: Iterator<Item=O>,
               S: Fn(&O) -> D,
               C: Fn(&D, &D) -> D,
     {
@@ -373,11 +374,11 @@ impl<P, N, O, D> DataQuery<D> for NTree<P, N, O, D> {
               F: FnMut(&D),
     {
         match self.state {
-            NodeState::Branch(ref nodes) if recurse.call((self,)) =>
+            NodeState::Branch(ref nodes) if recurse(self) =>
                 for node in nodes.iter() {
                     node.query_data(recurse, f)
                 },
-            _ => f.call_mut((&self.data,)),
+            _ => f(&self.data),
         }
     }
 }
@@ -388,11 +389,11 @@ impl<P, N, O, D> ObjectQuery<O> for NTree<P, N, O, D> {
               F: FnMut(&O),
     {
         match self.state {
-            NodeState::Branch(ref nodes) if recurse.call((self,)) =>
+            NodeState::Branch(ref nodes) if recurse(self) =>
                 for node in nodes.iter() {
                     node.query_objects(recurse, f)
                 },
-            NodeState::Leaf(ref obj) => f.call_mut((obj,)),
+            NodeState::Leaf(ref obj) => f(obj),
             _ => (),
         }
     }
@@ -410,11 +411,11 @@ mod test {
     };
     use std::num::Float;
     use std::rand::distributions::{IndependentSample, Range};
-    use std::rand::task_rng;
+    use std::rand::thread_rng;
     use std::iter::AdditiveIterator;
     use test::Bencher;
     use nalgebra::{ApproxEq, Pnt2, Pnt3, FloatPnt, Vec2, Vec3, zero, Norm, Orig};
-    use quickcheck::TestResult;
+    use quickcheck::{TestResult, quickcheck};
 
     #[test]
     fn subdivide_2d_4nodes() {
@@ -428,40 +429,52 @@ mod test {
         assert_eq!(nodes.len(), 8);
     }
 
-    #[quickcheck]
-    fn subdivide_new_width_half((x, y, width): (f64, f64, f64)) -> bool {
-        let new_coords = subdivide(&Pnt2::new(x, y), &width);
-        new_coords.iter().all(|&(_, new_width)|
-            new_width == width / 2.0
-        )
-    }
-
-    #[quickcheck]
-    fn subdivide_new_centers_dist((x, y, width): (f64, f64, f64)) -> TestResult {
-        if width > 0.0 {
-            let center = Pnt2::new(x, y);
-            let new_coords = subdivide(&center, &width);
-            TestResult::from_bool(new_coords.iter().all(|&(new_center, _)| {
-                ApproxEq::approx_eq(
-                    &FloatPnt::dist(&new_center, &center),
-                    &(width * 2.0.powf(-1.5))
-                )
-            }))
-        } else {
-            TestResult::discard()
+    #[test]
+    fn subdivide_new_width_half() {
+        fn subdivide_new_width_half((x, y, width): (f64, f64, f64)) -> bool {
+            let new_coords = subdivide(&Pnt2::new(x, y), &width);
+            new_coords.iter().all(|&(_, new_width)|
+                new_width == width / 2.0
+            )
         }
+        quickcheck(subdivide_new_width_half as fn((f64, f64, f64)) -> bool);
     }
 
-    #[quickcheck]
-    fn branch_dispatch_index_range_2d((px, py): (f64, f64)) -> bool {
-        // TODO: make the center variable
-        branch_dispatch(&Pnt2::new(0.0, 0.0), &Pnt2::new(px, py)) < 4
+    #[test]
+    fn subdivide_new_centers_dist() {
+        fn subdivide_new_centers_dist((x, y, width): (f64, f64, f64)) -> TestResult {
+            if width > 0.0 {
+                let center = Pnt2::new(x, y);
+                let new_coords = subdivide(&center, &width);
+                TestResult::from_bool(new_coords.iter().all(|&(new_center, _)| {
+                    ApproxEq::approx_eq(
+                        &FloatPnt::dist(&new_center, &center),
+                        &(width * 2.0.powf(-1.5))
+                    )
+                }))
+            } else {
+                TestResult::discard()
+            }
+        }
+        quickcheck(subdivide_new_centers_dist as fn((f64, f64, f64)) -> TestResult);
     }
 
-    #[quickcheck]
-    fn branch_dispatch_index_range_3d((px, py, pz): (f64, f64, f64)) -> bool {
-        // TODO: make the center variable
-        branch_dispatch(&Pnt3::new(0.0, 0.0, 0.0), &Pnt3::new(px, py, pz)) < 8
+    #[test]
+    fn branch_dispatch_index_range_2d() {
+        fn branch_dispatch_index_range_2d((px, py): (f64, f64)) -> bool {
+            // TODO: make the center variable
+            branch_dispatch(&Pnt2::new(0.0, 0.0), &Pnt2::new(px, py)) < 4
+        }
+        quickcheck(branch_dispatch_index_range_2d as fn((f64, f64)) -> bool);
+    }
+
+    #[test]
+    fn branch_dispatch_index_range_3d() {
+        fn branch_dispatch_index_range_3d((px, py, pz): (f64, f64, f64)) -> bool {
+            // TODO: make the center variable
+            branch_dispatch(&Pnt3::new(0.0, 0.0, 0.0), &Pnt3::new(px, py, pz)) < 8
+        }
+        quickcheck(branch_dispatch_index_range_3d as fn((f64, f64, f64)) -> bool);
     }
 
     #[test]
@@ -543,47 +556,53 @@ mod test {
         }
     }
 
-    #[quickcheck]
-    fn ntree_from_iter_more_than_two_branches(data: Vec<(uint, f64, f64)>) -> bool {
-        let tree = NTree::from_iter(
-            data.iter()
-            .map(|&(i, x, y)| Positioned { object: i, position: Pnt2::new(x, y) }),
-            (), &|_| (), &|_, _| ()
-        );
-        (data.len() >= 2) == (
-            match tree.state {
-                NodeState::Branch(_) => true,
-                _ => false,
-            }
-        )
+    #[test]
+    fn ntree_from_iter_more_than_two_branches() {
+        fn ntree_from_iter_more_than_two_branches(data: Vec<(uint, f64, f64)>) -> bool {
+            let tree = NTree::from_iter(
+                data.iter()
+                .map(|&(i, x, y)| Positioned { object: i, position: Pnt2::new(x, y) }),
+                (), &|_| (), &|_, _| ()
+            );
+            (data.len() >= 2) == (
+                match tree.state {
+                    NodeState::Branch(_) => true,
+                    _ => false,
+                }
+            )
+        }
+        quickcheck(ntree_from_iter_more_than_two_branches as fn(data: Vec<(uint, f64, f64)>) -> bool)
     }
 
-    #[quickcheck]
-    fn ntree_from_iter_one_is_a_leaf(data: Vec<(uint, f64, f64)>) -> bool {
-        let tree = NTree::from_iter(
-            data.iter()
-            .map(|&(i, x, y)| Positioned { object: i, position: Pnt2::new(x, y) }),
-            (), &|_| (), &|_, _| ()
-        );
-        (data.len() == 1) == (
-            match tree.state {
-                NodeState::Leaf(_) => true,
-                _ => false,
-            }
-        )
+    #[test]
+    fn ntree_from_iter_one_is_a_leaf() {
+        fn ntree_from_iter_one_is_a_leaf(data: Vec<(uint, f64, f64)>) -> bool {
+            let tree = NTree::from_iter(
+                data.iter()
+                .map(|&(i, x, y)| Positioned { object: i, position: Pnt2::new(x, y) }),
+                (), &|_| (), &|_, _| ()
+            );
+            (data.len() == 1) == (
+                match tree.state {
+                    NodeState::Leaf(_) => true,
+                    _ => false,
+                }
+            )
+        }
+        quickcheck(ntree_from_iter_one_is_a_leaf as fn(data: Vec<(uint, f64, f64)>) -> bool)
     }
 
     #[bench]
     fn pure_ntree_quad_from_iter_raw_1000(b: &mut Bencher) {
         let coord_dist = Range::new(-1.0f64, 1.0);
-        let mut rng = task_rng();
-        let vec = Vec::from_fn(1000, |_| Positioned {
+        let mut rng = thread_rng();
+        let vec: Vec<_> = range(0u, 1000).map(|_| Positioned {
             object: 1i,
             position: Pnt2::new(
                 coord_dist.ind_sample(&mut rng),
                 coord_dist.ind_sample(&mut rng)
             ),
-        });
+        }).collect();
         b.iter(|| {
             PureNTree::from_iter_raw(
                 vec.iter().map(|a| a.clone()),
@@ -595,14 +614,14 @@ mod test {
     #[bench]
     fn pure_ntree_quad_from_iter_1000(b: &mut Bencher) {
         let coord_dist = Range::new(-1.0f64, 1.0);
-        let mut rng = task_rng();
-        let vec = Vec::from_fn(1000, |_| Positioned {
+        let mut rng = thread_rng();
+        let vec: Vec<_> = range(0u, 1000).map(|_| Positioned {
             object: 1i,
             position: Pnt2::new(
                 coord_dist.ind_sample(&mut rng),
                 coord_dist.ind_sample(&mut rng)
             ),
-        });
+        }).collect();
         b.iter(||
             PureNTree::from_iter(vec.iter().map(|a| a.clone()))
         )
@@ -611,15 +630,15 @@ mod test {
     #[bench]
     fn pure_ntree_oc_from_iter_1000(b: &mut Bencher) {
         let coord_dist = Range::new(-1.0f64, 1.0);
-        let mut rng = task_rng();
-        let vec = Vec::from_fn(1000, |_| Positioned {
+        let mut rng = thread_rng();
+        let vec: Vec<_> = range(0u, 1000).map(|_| Positioned {
             object: 1i,
             position: Pnt3::new(
                 coord_dist.ind_sample(&mut rng),
                 coord_dist.ind_sample(&mut rng),
                 coord_dist.ind_sample(&mut rng)
             ),
-        });
+        }).collect();
         b.iter(|| {
             PureNTree::from_iter(vec.iter().map(|a| a.clone()))
         })
@@ -628,14 +647,14 @@ mod test {
     #[bench]
     fn ntree_quad_with_center_of_mass_from_iter_1000(b: &mut Bencher) {
         let coord_dist = Range::new(-1.0f64, 1.0);
-        let mut rng = task_rng();
-        let vec = Vec::from_fn(1000, |_| Positioned {
+        let mut rng = thread_rng();
+        let vec: Vec<_> = range(0u, 1000).map(|_| Positioned {
             object: 1.0,
             position: Pnt2::new(
                 coord_dist.ind_sample(&mut rng),
                 coord_dist.ind_sample(&mut rng)
             ),
-        });
+        }).collect();
         b.iter(|| {
             NTree::from_iter(
                 vec.iter().map(|a| a.clone()),
@@ -649,14 +668,14 @@ mod test {
     #[bench]
     fn ntree_quad_with_center_of_mass_from_iter_raw_1000(b: &mut Bencher) {
         let coord_dist = Range::new(-1.0f64, 1.0);
-        let mut rng = task_rng();
-        let vec = Vec::from_fn(1000, |_| Positioned {
+        let mut rng = thread_rng();
+        let vec: Vec<_> = range(0u, 1000).map(|_| Positioned {
             object: 1.0,
             position: Pnt2::new(
                 coord_dist.ind_sample(&mut rng),
                 coord_dist.ind_sample(&mut rng)
             ),
-        });
+        }).collect();
         b.iter(|| {
             NTree::from_iter_raw(
                 vec.iter().map(|a| a.clone()),
@@ -671,7 +690,7 @@ mod test {
     #[bench]
     fn pure_ntree_query_objects(b: &mut Bencher) {
         let coord_dist = Range::new(-1.0f64, 1.0);
-        let mut rng = task_rng();
+        let mut rng = thread_rng();
         let objects: Vec<_> = range(0u, 1000).map(|_| Positioned {
             object: (),
             position: Pnt2::new(
@@ -696,118 +715,124 @@ mod test {
         })
     }
 
-    #[quickcheck]
-    fn ntree_center_of_mass(data: Vec<(f64, (f64, f64))>) -> TestResult {
-        // Only test non-empty lists with positive masses
-        if data.is_empty() || data.iter().any(|&(m, _)| m <= 0.0) {
-            return TestResult::discard();
-        }
-        // No two points should be in the same place
-        for i in range(0, data.len()) {
-            for j in range(0, i) {
-                let (_, pi) = data[i];
-                let (_, pj) = data[j];
-                if pi == pj {
-                    return TestResult::discard();
+    #[test]
+    fn ntree_center_of_mass() {
+        fn ntree_center_of_mass(data: Vec<(f64, (f64, f64))>) -> TestResult {
+            // Only test non-empty lists with positive masses
+            if data.is_empty() || data.iter().any(|&(m, _)| m <= 0.0) {
+                return TestResult::discard();
+            }
+            // No two points should be in the same place
+            for i in range(0, data.len()) {
+                for j in range(0, i) {
+                    let (_, pi) = data[i];
+                    let (_, pj) = data[j];
+                    if pi == pj {
+                        return TestResult::discard();
+                    }
                 }
             }
+            // Compute center of mass in the traditional way
+            let (mps, ms) = data.iter()
+                .map(|&(m, (x, y))| (Vec2::new(x, y) * m, m))
+                .fold((zero::<Vec2<f64>>(), 0.0f64), |(mps, ms), (mp, m)| (mps + mp, ms + m));
+            let com = mps / ms;
+            // Now use the tree
+            let tree = NTree::from_iter(
+                data.iter().map(|&(m, (x, y))|
+                    Positioned { object: m, position: Pnt2::new(x, y) }
+                ),
+                (Vec2::new(0.0f64, 0.0), 0.0f64),
+                &|obj| (obj.position.to_vec() * obj.object, obj.object),
+                &|&(mps, ms), &(mp, m)| (mps + mp, ms + m)
+            );
+            let (tree_mps, tree_ms) = tree.data;
+            // …and compare
+            TestResult::from_bool(ApproxEq::approx_eq(&(tree_mps / tree_ms), &com))
         }
-        // Compute center of mass in the traditional way
-        let (mps, ms) = data.iter()
-            .map(|&(m, (x, y))| (Vec2::new(x, y) * m, m))
-            .fold((zero::<Vec2<f64>>(), 0.0f64), |(mps, ms), (mp, m)| (mps + mp, ms + m));
-        let com = mps / ms;
-        // Now use the tree
-        let tree = NTree::from_iter(
-            data.iter().map(|&(m, (x, y))|
-                Positioned { object: m, position: Pnt2::new(x, y) }
-            ),
-            (Vec2::new(0.0f64, 0.0), 0.0f64),
-            &|obj| (obj.position.to_vec() * obj.object, obj.object),
-            &|&(mps, ms), &(mp, m)| (mps + mp, ms + m)
-        );
-        let (tree_mps, tree_ms) = tree.data;
-        // …and compare
-        TestResult::from_bool(ApproxEq::approx_eq(&(tree_mps / tree_ms), &com))
+        quickcheck(ntree_center_of_mass as fn(Vec<(f64, (f64, f64))>) -> TestResult);
     }
 
-    #[quickcheck]
-    fn ntree_gravity_approx(
-            starfield: Vec<(f64, (f64, f64, f64))>,
-            test_point_: (f64, f64, f64)
-        ) -> TestResult
-    {
-        // We want to have at least one star
-        if starfield.is_empty() {
-            return TestResult::discard();
-        }
-        // Only test positive masses
-        if starfield.iter().any(|&(m, _)| m <= 0.0) {
-            return TestResult::discard();
-        }
-        // The test point should not be in the same place as any star
-        if starfield.iter().any(|&(_, p)| p == test_point_) {
-            return TestResult::discard();
-        }
-        // No two stars should be in the same place
-        for i in range(0, starfield.len()) {
-            for j in range(0, i) {
-                let (_, pi) = starfield[i];
-                let (_, pj) = starfield[j];
-                if pi == pj {
-                    return TestResult::discard();
+    #[test]
+    fn ntree_gravity_approx() {
+        fn ntree_gravity_approx(
+                starfield: Vec<(f64, (f64, f64, f64))>,
+                test_point_: (f64, f64, f64)
+            ) -> TestResult
+        {
+            // We want to have at least one star
+            if starfield.is_empty() {
+                return TestResult::discard();
+            }
+            // Only test positive masses
+            if starfield.iter().any(|&(m, _)| m <= 0.0) {
+                return TestResult::discard();
+            }
+            // The test point should not be in the same place as any star
+            if starfield.iter().any(|&(_, p)| p == test_point_) {
+                return TestResult::discard();
+            }
+            // No two stars should be in the same place
+            for i in range(0, starfield.len()) {
+                for j in range(0, i) {
+                    let (_, pi) = starfield[i];
+                    let (_, pj) = starfield[j];
+                    if pi == pj {
+                        return TestResult::discard();
+                    }
                 }
             }
+            // (T, T, T) -> Pnt3<T>
+            let pnt = |&:p| {
+                let (x, y, z) = p;
+                Pnt3::new(x, y, z)
+            };
+            let test_point = pnt(test_point_);
+            // Newton's law of gravity for two point masses (with G = 1)
+            let newton = |&:(m, p1): (f64, Pnt3<f64>), p2| {
+                let diff: Vec3<f64> = p1 - p2;
+                let r = diff.norm();
+                diff * (m / r.powi(3))
+            };
+            // Calculate gravity exactly
+            let simple_gravity = starfield.iter()
+                .map(|&(m, p)| newton((m, pnt(p)), test_point))
+                .fold(zero(), |a: Vec3<_>, b| a + b);
+            // Calculate gravity using a tree
+            let orig: Pnt3<f64> = Orig::orig();
+            let tree = NTree::from_iter_with_geometry(
+                starfield.iter().map(|&(m, (x, y, z))|
+                    Positioned { object: m, position: Pnt3::new(x, y, z) }
+                ),
+                orig,
+                test_point.as_vec().norm() * 2.0,
+                (orig, zero()),
+                &|obj| (obj.position, obj.object),
+                &|&(com1, m1), &(com2, m2)|
+                    if m1 + m2 > zero() {(
+                        orig + (com1.to_vec() * m1 + com2.to_vec() * m2) / (m1 + m2),
+                        m1 + m2,
+                    )}
+                    else {
+                        (orig, zero())
+                    }
+            );
+            let theta = 0.5; // A bit arbitrary but this appears to work
+            let mut tree_gravity: Vec3<_> = zero();
+            tree.query_data(
+                &|node| {
+                    let &(ref center_of_mass, _) = node.data();
+                    let d = FloatPnt::dist(&test_point, center_of_mass);
+                    let delta = FloatPnt::dist(node.center(), center_of_mass);
+                    d < *node.width() / theta + delta
+                },
+                &mut |&(com, m)| {
+                    tree_gravity = tree_gravity + newton((m, com), test_point);
+                },
+            );
+            // Now the tree gravity should approximate the exact one, within 5 %
+            TestResult::from_bool(simple_gravity.approx_eq_eps(&tree_gravity, &(0.05 * simple_gravity.norm())))
         }
-        // (T, T, T) -> Pnt3<T>
-        let pnt = |p| {
-            let (x, y, z) = p;
-            Pnt3::new(x, y, z)
-        };
-        let test_point = pnt(test_point_);
-        // Newton's law of gravity for two point masses (with G = 1)
-        let newton = |(m, p1): (f64, Pnt3<f64>), p2| {
-            let diff: Vec3<f64> = p1 - p2;
-            let r = diff.norm();
-            diff * (m / r.powi(3))
-        };
-        // Calculate gravity exactly
-        let simple_gravity = starfield.iter()
-            .map(|&(m, p)| newton((m, pnt(p)), test_point))
-            .fold(zero(), |a: Vec3<_>, b| a + b);
-        // Calculate gravity using a tree
-        let orig: Pnt3<f64> = Orig::orig();
-        let tree = NTree::from_iter_with_geometry(
-            starfield.iter().map(|&(m, (x, y, z))|
-                Positioned { object: m, position: Pnt3::new(x, y, z) }
-            ),
-            orig,
-            test_point.as_vec().norm() * 2.0,
-            (orig, zero()),
-            &|obj| (obj.position, obj.object),
-            &|&(com1, m1), &(com2, m2)|
-                if m1 + m2 > zero() {(
-                    orig + (com1.to_vec() * m1 + com2.to_vec() * m2) / (m1 + m2),
-                    m1 + m2,
-                )}
-                else {
-                    (orig, zero())
-                }
-        );
-        let theta = 0.5; // A bit arbitrary but this appears to work
-        let mut tree_gravity: Vec3<_> = zero();
-        tree.query_data(
-            &|node| {
-                let &(ref center_of_mass, _) = node.data();
-                let d = FloatPnt::dist(&test_point, center_of_mass);
-                let delta = FloatPnt::dist(node.center(), center_of_mass);
-                d < *node.width() / theta + delta
-            },
-            &mut |&(com, m)| {
-                tree_gravity = tree_gravity + newton((m, com), test_point);
-            },
-        );
-        // Now the tree gravity should approximate the exact one, within 5 %
-        TestResult::from_bool(simple_gravity.approx_eq_eps(&tree_gravity, &(0.05 * simple_gravity.norm())))
+        quickcheck(ntree_gravity_approx as fn(Vec<(f64, (f64, f64, f64))>, (f64, f64, f64)) -> TestResult)
     }
 }

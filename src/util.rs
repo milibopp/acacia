@@ -24,7 +24,7 @@ use nalgebra::{POrd, Orig};
 ///
 /// - `values` is a by-reference iterator over points
 pub fn limits<I, P>(values: I) -> (P, P)
-    where I: Iterator<P>,
+    where I: Iterator<Item=P>,
           P: POrd + Orig + Copy,
 {
     let mut values = values;
@@ -43,6 +43,7 @@ pub fn limits<I, P>(values: I) -> (P, P)
 mod test {
     use super::limits;
     use nalgebra::{Orig, Pnt3, POrd};
+    use quickcheck::quickcheck;
 
     #[test]
     fn limits_no_points() {
@@ -59,24 +60,33 @@ mod test {
         assert_eq!(sup, p);
     }
 
-    #[quickcheck]
-    fn limits_inf_less_than_or_equal_sup(points: Vec<(f32, f32, f32)>) -> bool {
-        let points: Vec<Pnt3<f32>> = points.iter().map(|&(x, y, z)| Pnt3::new(x, y, z)).collect();
-        let (inf, sup) = limits(points.into_iter());
-        POrd::partial_le(&inf, &sup)
+    #[test]
+    fn limits_inf_less_than_or_equal_sup() {
+        fn limits_inf_less_than_or_equal_sup(points: Vec<(f32, f32, f32)>) -> bool {
+            let points: Vec<Pnt3<f32>> = points.iter().map(|&(x, y, z)| Pnt3::new(x, y, z)).collect();
+            let (inf, sup) = limits(points.into_iter());
+            POrd::partial_le(&inf, &sup)
+        }
+        quickcheck(limits_inf_less_than_or_equal_sup as fn(Vec<(f32, f32, f32)>) -> bool);
     }
 
-    #[quickcheck]
-    fn limits_inf_less_than_or_equal_all(points: Vec<(f32, f32, f32)>) -> bool {
-        let points: Vec<Pnt3<f32>> = points.iter().map(|&(x, y, z)| Pnt3::new(x, y, z)).collect();
-        let (inf, _) = limits(points.clone().into_iter());
-        points.iter().all(|p| POrd::partial_le(&inf, p))
+    #[test]
+    fn limits_inf_less_than_or_equal_all() {
+        fn limits_inf_less_than_or_equal_all(points: Vec<(f32, f32, f32)>) -> bool {
+            let points: Vec<Pnt3<f32>> = points.iter().map(|&(x, y, z)| Pnt3::new(x, y, z)).collect();
+            let (inf, _) = limits(points.clone().into_iter());
+            points.iter().all(|p| POrd::partial_le(&inf, p))
+        }
+        quickcheck(limits_inf_less_than_or_equal_all as fn(Vec<(f32, f32, f32)>) -> bool);
     }
 
-    #[quickcheck]
-    fn limits_sup_greater_than_or_equal_all(points: Vec<(f32, f32, f32)>) -> bool {
-        let points: Vec<Pnt3<f32>> = points.iter().map(|&(x, y, z)| Pnt3::new(x, y, z)).collect();
-        let (_, sup) = limits(points.clone().into_iter());
-        points.iter().all(|p| POrd::partial_ge(&sup, p))
+    #[test]
+    fn limits_sup_greater_than_or_equal_all() {
+        fn limits_sup_greater_than_or_equal_all(points: Vec<(f32, f32, f32)>) -> bool {
+            let points: Vec<Pnt3<f32>> = points.iter().map(|&(x, y, z)| Pnt3::new(x, y, z)).collect();
+            let (_, sup) = limits(points.clone().into_iter());
+            points.iter().all(|p| POrd::partial_ge(&sup, p))
+        }
+        quickcheck(limits_sup_greater_than_or_equal_all as fn(Vec<(f32, f32, f32)>) -> bool);
     }
 }
