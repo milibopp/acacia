@@ -92,10 +92,13 @@ pub trait ObjectQuery<O> {
 ///
 /// This is part of the essential features of a tree. Note that both a whole
 /// tree and its constituents implement this.
-pub trait Node<P, N, O, C> {
+pub trait Node<P, N, O> {
+
+    /// Type of container used to store subnodes
+    type Container;
 
     /// The state of the node
-    fn state(&self) -> &NodeState<O, C>;
+    fn state(&self) -> &NodeState<O, <Self as Node<P, N, O>>::Container>;
 
     /// The center point of the node
     fn center(&self) -> &P;
@@ -124,7 +127,7 @@ pub trait AssociatedData<D> {
 /// - `N` is the scalar of the vector space of points.
 /// - The tree stores objects of type `O`. These objects need to have some
 ///   notion of a position.
-pub trait PureTree<P, N, O, C>: ObjectQuery<O> + Node<P, N, O, C> {}
+pub trait PureTree<P, N, O>: ObjectQuery<O> + Node<P, N, O> {}
 
 
 /// A spatial tree with associated data
@@ -139,7 +142,7 @@ pub trait PureTree<P, N, O, C>: ObjectQuery<O> + Node<P, N, O, C> {}
 ///   notion of a position.
 /// - `D` is the kind of data associated with each node. This is computed
 ///   recursively during tree construction.
-pub trait Tree<P, N, O, C, D>: DataQuery<D> + AssociatedData<D> + PureTree<P, N, O, C> {}
+pub trait Tree<P, N, O, D>: DataQuery<D> + AssociatedData<D> + PureTree<P, N, O> {}
 
 
 /// A type that has a notion of a position
