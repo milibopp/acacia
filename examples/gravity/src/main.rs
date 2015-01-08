@@ -1,7 +1,7 @@
 extern crate nalgebra;
 extern crate acacia;
 
-use std::rand::task_rng;
+use std::rand::thread_rng;
 use std::rand::distributions::{Range, IndependentSample};
 use std::num::Float;
 use nalgebra::{Pnt3, Vec3, FloatPnt, Norm, Orig, zero};
@@ -34,12 +34,13 @@ fn main() {
     let origin: Pnt3<f64> = Orig::orig();
 
     // Generate a number of particles
+    let mut rng = thread_rng();
     let coord_range = Range::new(-5.0, 5.0);
     let particles: Vec<_> = range(0u, 1000).map(|_|
         PointMass { mass: 1.0, position: Pnt3::new(
-            coord_range.ind_sample(&mut task_rng()),
-            coord_range.ind_sample(&mut task_rng()),
-            coord_range.ind_sample(&mut task_rng())) })
+            coord_range.ind_sample(&mut rng),
+            coord_range.ind_sample(&mut rng),
+            coord_range.ind_sample(&mut rng)) })
         .collect();
 
     // Construct the tree
