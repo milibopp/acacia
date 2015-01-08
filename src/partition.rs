@@ -37,35 +37,50 @@ pub trait Partition<T>: Sized {
 }
 
 
-/// A half-open interval [a, b) between two f64
-#[derive(Copy)]
-pub struct Interval {
-    start: f64,
-    end: f64
+/// The notion of a mid point between two inputs
+trait Mid {
+    /// Return the mid between this point and another
+    fn mid(self, other: Self) -> Self;
 }
 
-impl Interval {
+impl Mid for f64 {
+    fn mid(self, other: f64) -> f64 { (self + other) / 2.0 }
+}
+
+impl Mid for f32 {
+    fn mid(self, other: f32) -> f32 { (self + other) / 2.0 }
+}
+
+
+/// A half-open interval [a, b) between two points a and b
+#[derive(Copy)]
+pub struct Interval<T> {
+    start: T,
+    end: T,
+}
+
+impl<T: PartialOrd> Interval<T> {
     /// Create a new interval given lower and upper bound
     ///
     /// This constructor dynamically asserts that `start < end`.
-    pub fn new(start: f64, end: f64) -> Interval {
+    pub fn new(start: T, end: T) -> Interval<T> {
         assert!(start < end);
         Interval { start: start, end: end }
     }
 }
 
-impl Partition<f64> for Interval {
-    type Iter = IntoIter<Interval>;
+impl<T: Mid + PartialOrd + Copy> Partition<T> for Interval<T> {
+    type Iter = IntoIter<Interval<T>>;
 
-    fn subdivide(&self) -> IntoIter<Interval> {
-        let mid = (self.start + self.end) / 2.0;
+    fn subdivide(&self) -> IntoIter<Interval<T>> {
+        let mid = self.start.mid(self.end);
         vec![
-            Interval::new(self.start, mid),
-            Interval::new(mid, self.end)
+            Interval { start: self.start, end: mid },
+            Interval { start: mid, end: self.end },
         ].into_iter()
     }
 
-    fn contains(&self, elem: &f64) -> bool {
+    fn contains(&self, elem: &T) -> bool {
         (self.start <= *elem) && (*elem < self.end)
     }
 }
@@ -77,13 +92,13 @@ mod test {
     use quickcheck::{quickcheck, TestResult};
 
     #[test]
-    fn interval_total() {
-        fn interval_total((a, b): (f64, f64), c: f64) -> TestResult {
+    fn interval_total_f64() {
+        fn interval_total_f64((a, b): (f64, f64), c: f64) -> TestResult {
             if b < a { TestResult::discard() }
             else { TestResult::from_bool({
                 Interval::new(a, b).prop_is_total(&c)
             })}
         }
-        quickcheck(interval_total as fn((f64, f64), f64) -> TestResult);
+        quickcheck(interval_total_f64 as fn((f64, f64), f64) -> TestResult);
     }
 }
