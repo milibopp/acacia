@@ -8,8 +8,7 @@ use std::iter::AdditiveIterator;
 use std::mem;
 use util::limits;
 use tree::{
-    NodeState, Tree, PureTree, DataQuery, ObjectQuery, AssociatedData, Node,
-    Positionable,
+    NodeState, DataQuery, ObjectQuery, AssociatedData, Node, Positionable,
 };
 
 
@@ -150,7 +149,7 @@ impl<P, N, O, V> PureNTree<P, N, O>
     }
 }
 
-impl<P, N, O> ObjectQuery<O> for PureNTree<P, N, O> {
+impl<P, N, O> ObjectQuery for PureNTree<P, N, O> {
     fn query_objects<R, F>(&self, recurse: &R, f: &mut F)
         where R: Fn(&PureNTree<P, N, O>) -> bool,
               F: FnMut(&O),
@@ -168,7 +167,11 @@ impl<P, N, O> ObjectQuery<O> for PureNTree<P, N, O> {
     }
 }
 
-impl<P, N, O> Node<P, N, O, Vec<PureNTree<P, N, O>>> for PureNTree<P, N, O> {
+impl<P, N, O> Node for PureNTree<P, N, O> {
+    type Point = P;
+    type Scalar = N;
+    type Object = O;
+    type Container = Vec<PureNTree<P, N, O>>;
 
     fn state(&self) -> &NodeState<O, Vec<PureNTree<P, N, O>>> {
         &self.state
@@ -182,8 +185,6 @@ impl<P, N, O> Node<P, N, O, Vec<PureNTree<P, N, O>>> for PureNTree<P, N, O> {
         &self.width
     }
 }
-
-impl<P, N, O> PureTree<P, N, O, Vec<PureNTree<P, N, O>>> for PureNTree<P, N, O> {}
 
 
 /// An N-dimensional tree
@@ -348,7 +349,12 @@ impl<P, N, O, D, V> NTree<P, N, O, D>
     }
 }
 
-impl<P, N, O, D> Node<P, N, O, Vec<NTree<P, N, O, D>>> for NTree<P, N, O, D> {
+impl<P, N, O, D> Node for NTree<P, N, O, D> {
+    type Point = P;
+    type Scalar = N;
+    type Object = O;
+    type Container = Vec<NTree<P, N, O, D>>;
+
     fn state(&self) -> &NodeState<O, Vec<NTree<P, N, O, D>>> {
         &self.state
     }
@@ -362,13 +368,15 @@ impl<P, N, O, D> Node<P, N, O, Vec<NTree<P, N, O, D>>> for NTree<P, N, O, D> {
     }
 }
 
-impl<P, N, O, D> AssociatedData<D> for NTree<P, N, O, D> {
+impl<P, N, O, D> AssociatedData for NTree<P, N, O, D> {
+    type Data = D;
+
     fn data(&self) -> &D {
         &self.data
     }
 }
 
-impl<P, N, O, D> DataQuery<D> for NTree<P, N, O, D> {
+impl<P, N, O, D> DataQuery for NTree<P, N, O, D> {
     fn query_data<R, F>(&self, recurse: &R, f: &mut F)
         where R: Fn(&NTree<P, N, O, D>) -> bool,
               F: FnMut(&D),
@@ -383,7 +391,7 @@ impl<P, N, O, D> DataQuery<D> for NTree<P, N, O, D> {
     }
 }
 
-impl<P, N, O, D> ObjectQuery<O> for NTree<P, N, O, D> {
+impl<P, N, O, D> ObjectQuery for NTree<P, N, O, D> {
     fn query_objects<R, F>(&self, recurse: &R, f: &mut F)
         where R: Fn(&NTree<P, N, O, D>) -> bool,
               F: FnMut(&O),
@@ -398,9 +406,6 @@ impl<P, N, O, D> ObjectQuery<O> for NTree<P, N, O, D> {
         }
     }
 }
-
-impl<P, N, O, D> PureTree<P, N, O, Vec<NTree<P, N, O, D>>> for NTree<P, N, O, D> {}
-impl<P, N, O, D> Tree<P, N, O, Vec<NTree<P, N, O, D>>, D> for NTree<P, N, O, D> {}
 
 
 #[cfg(test)]
