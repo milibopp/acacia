@@ -23,6 +23,76 @@ pub enum NodeState<O, C> {
 }
 
 
+/// A tree node
+///
+/// This is part of the essential features of a tree. Note that both a whole
+/// tree and its constituents implement this.
+pub trait Node {
+
+    /// The underlying space partitioned by the node structure
+    type Point;
+
+    /// The scalar used
+    type Scalar;
+
+    /// The type of object stored
+    type Object;
+
+    /// Type of container used to store subnodes
+    type Container;
+
+    /// The state of the node
+    fn state(&self) -> &NodeState<<Self as Node>::Object, <Self as Node>::Container>;
+
+    /// The center point of the node
+    fn center(&self) -> &<Self as Node>::Point;
+
+    /// The width of the node
+    fn width(&self) -> &<Self as Node>::Scalar;
+}
+
+
+/// A tree with associated data
+pub trait AssociatedData {
+
+    /// Type of the associated data
+    type Data;
+
+    /// Data associated to the node
+    fn data(&self) -> &<Self as AssociatedData>::Data;
+}
+
+
+/// A tree that allows recursive queries on its objects
+///
+/// Closures are used to determine the recursion behavior and what is to be
+/// computed.
+///
+/// # Type parameters
+///
+/// - `O` is the type of the objects stored in the tree.
+pub trait ObjectQuery: Node {
+
+    /// Compute a query on the objects using an accumulator
+    ///
+    /// This method walks recursively through the tree, as deep as `recurse`
+    /// prescribes, and calls a function on each object encountered.
+    ///
+    /// Empty nodes and branch nodes with `!recurse(&node)` are ignored, whereas
+    /// the callback is called on every object in a leaf node.
+    ///
+    /// # Parameters
+    ///
+    /// - At each branching node the tree is only recursed further, iff
+    ///   `recurse(&node)`.
+    /// - `f` is the callback function. This may mutably borrow its environment,
+    ///   which is currently the only way to obtain a result from this function.
+    fn query_objects<R, F>(&self, recurse: &R, f: &mut F)
+        where R: Fn(&Self) -> bool,
+              F: FnMut(&<Self as Node>::Object);
+}
+
+
 /// A tree which allows recursive queries on its associated data
 ///
 /// Closures are used to determine the recursion behavior and what is to be
@@ -31,7 +101,7 @@ pub enum NodeState<O, C> {
 /// # Type parameters
 ///
 /// - `D` is the type of the associated data.
-pub trait DataQuery<D> {
+pub trait DataQuery: AssociatedData {
 
     /// Compute a query on the associated data using a mutable accumulator
     ///
@@ -54,92 +124,8 @@ pub trait DataQuery<D> {
     ///   the only way to obtain a result from this function.
     fn query_data<R, F>(&self, recurse: &R, f: &mut F)
         where R: Fn(&Self) -> bool,
-              F: FnMut(&D);
+              F: FnMut(&<Self as AssociatedData>::Data);
 }
-
-
-/// A tree that allows recursive queries on its objects
-///
-/// Closures are used to determine the recursion behavior and what is to be
-/// computed.
-///
-/// # Type parameters
-///
-/// - `O` is the type of the objects stored in the tree.
-pub trait ObjectQuery<O> {
-
-    /// Compute a query on the objects using an accumulator
-    ///
-    /// This method walks recursively through the tree, as deep as `recurse`
-    /// prescribes, and calls a function on each object encountered.
-    ///
-    /// Empty nodes and branch nodes with `!recurse(&node)` are ignored, whereas
-    /// the callback is called on every object in a leaf node.
-    ///
-    /// # Parameters
-    ///
-    /// - At each branching node the tree is only recursed further, iff
-    ///   `recurse(&node)`.
-    /// - `f` is the callback function. This may mutably borrow its environment,
-    ///   which is currently the only way to obtain a result from this function.
-    fn query_objects<R, F>(&self, recurse: &R, f: &mut F)
-        where R: Fn(&Self) -> bool,
-              F: FnMut(&O);
-}
-
-
-/// A tree node
-///
-/// This is part of the essential features of a tree. Note that both a whole
-/// tree and its constituents implement this.
-pub trait Node<P, N, O, C> {
-
-    /// The state of the node
-    fn state(&self) -> &NodeState<O, C>;
-
-    /// The center point of the node
-    fn center(&self) -> &P;
-
-    /// The width of the node
-    fn width(&self) -> &N;
-}
-
-
-/// A tree with associated data
-pub trait AssociatedData<D> {
-
-    /// Data associated to the node
-    fn data(&self) -> &D;
-}
-
-
-/// A pure spatial tree
-///
-/// This trait wraps up the properties of a tree that contains only spatial
-/// information, but no associated data.
-///
-/// # Type parameters
-///
-/// - `P` is the kind of point used to position objects and nodes spatially.
-/// - `N` is the scalar of the vector space of points.
-/// - The tree stores objects of type `O`. These objects need to have some
-///   notion of a position.
-pub trait PureTree<P, N, O, C>: ObjectQuery<O> + Node<P, N, O, C> {}
-
-
-/// A spatial tree with associated data
-///
-/// This trait wraps up the properties of a tree that contains associated data.
-///
-/// # Type parameters
-///
-/// - `P` is the kind of point used to position objects and nodes spatially.
-/// - `N` is the scalar of the vector space of points.
-/// - The tree stores objects of type `O`. These objects need to have some
-///   notion of a position.
-/// - `D` is the kind of data associated with each node. This is computed
-///   recursively during tree construction.
-pub trait Tree<P, N, O, C, D>: DataQuery<D> + AssociatedData<D> + PureTree<P, N, O, C> {}
 
 
 /// A type that has a notion of a position
