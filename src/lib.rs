@@ -5,6 +5,9 @@
 #[macro_use]
 extern crate nalgebra;
 
+#[macro_use]
+extern crate itertools;
+
 #[cfg(test)]
 extern crate quickcheck;
 #[cfg(test)]
