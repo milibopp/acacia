@@ -168,7 +168,9 @@ impl<P, N, O> ObjectQuery<O> for PureNTree<P, N, O> {
     }
 }
 
-impl<P, N, O> Node<P, N, O, Vec<PureNTree<P, N, O>>> for PureNTree<P, N, O> {
+impl<P, N, O> Node<P, N, O> for PureNTree<P, N, O> {
+
+    type Container = Vec<PureNTree<P, N, O>>;
 
     fn state(&self) -> &NodeState<O, Vec<PureNTree<P, N, O>>> {
         &self.state
@@ -183,7 +185,7 @@ impl<P, N, O> Node<P, N, O, Vec<PureNTree<P, N, O>>> for PureNTree<P, N, O> {
     }
 }
 
-impl<P, N, O> PureTree<P, N, O, Vec<PureNTree<P, N, O>>> for PureNTree<P, N, O> {}
+impl<P, N, O> PureTree<P, N, O> for PureNTree<P, N, O> {}
 
 
 /// An N-dimensional tree
@@ -348,7 +350,9 @@ impl<P, N, O, D, V> NTree<P, N, O, D>
     }
 }
 
-impl<P, N, O, D> Node<P, N, O, Vec<NTree<P, N, O, D>>> for NTree<P, N, O, D> {
+impl<P, N, O, D> Node<P, N, O> for NTree<P, N, O, D> {
+    type Container = Vec<NTree<P, N, O, D>>;
+
     fn state(&self) -> &NodeState<O, Vec<NTree<P, N, O, D>>> {
         &self.state
     }
@@ -399,8 +403,8 @@ impl<P, N, O, D> ObjectQuery<O> for NTree<P, N, O, D> {
     }
 }
 
-impl<P, N, O, D> PureTree<P, N, O, Vec<NTree<P, N, O, D>>> for NTree<P, N, O, D> {}
-impl<P, N, O, D> Tree<P, N, O, Vec<NTree<P, N, O, D>>, D> for NTree<P, N, O, D> {}
+impl<P, N, O, D> PureTree<P, N, O> for NTree<P, N, O, D> {}
+impl<P, N, O, D> Tree<P, N, O, D> for NTree<P, N, O, D> {}
 
 
 #[cfg(test)]
