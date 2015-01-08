@@ -1,6 +1,6 @@
 //! Abstraction of spatial partitioning schemes
 
-use nalgebra::Vec2;
+use nalgebra::{Vec2, Vec3};
 
 
 /// A type describing a partition of some space
@@ -82,6 +82,38 @@ impl<T: Mid + PartialOrd + Copy> Partition<T> for Interval<T> {
 }
 
 
+macro_rules! impl_box {
+    ($b: ident, $($param: ident),*) => (
+        impl<T> $b<T> {
+            /// Create a new box from intervals
+            pub fn new($($param: Interval<T>),*) -> $b<T> {
+                $b { $($param: $param),* }
+            }
+        }
+    )
+}
+
+macro_rules! impl_partition_for_box {
+    ($b: ident, $v: ident, $($param: ident),*) => (
+        impl<T: Mid + PartialOrd + Copy> Partition<$v<T>> for $b<T> {
+            fn subdivide(&self) -> Vec<$b<T>> {
+                let mut subs = vec![];
+                $(let $param = self.$param.subdivide();)*
+                subs.extend(
+                    iproduct!($($param.iter()),*)
+                        .map(|($(&$param),*)| $b::new($($param),*))
+                );
+                subs
+            }
+
+            fn contains(&self, elem: &$v<T>) -> bool {
+                true $(&& self.$param.contains(&elem.$param))*
+            }
+        }
+    )
+}
+
+
 /// A 2d box of intervals
 #[derive(Copy, Clone)]
 pub struct Box2<T> {
@@ -89,29 +121,20 @@ pub struct Box2<T> {
     y: Interval<T>,
 }
 
-impl<T> Box2<T> {
-    /// Create a new box from intervals
-    pub fn new(x: Interval<T>, y: Interval<T>) -> Box2<T> {
-        Box2 { x: x, y: y }
-    }
+impl_box!(Box2, x, y);
+impl_partition_for_box!(Box2, Vec2, x, y);
+
+
+/// A 3d box of intervals
+#[derive(Copy, Clone)]
+pub struct Box3<T> {
+    x: Interval<T>,
+    y: Interval<T>,
+    z: Interval<T>,
 }
 
-impl<T: Mid + PartialOrd + Copy> Partition<Vec2<T>> for Box2<T> {
-    fn subdivide(&self) -> Vec<Box2<T>> {
-        let mut subs = vec![];
-        let xsubs = self.x.subdivide();
-        let ysubs = self.y.subdivide();
-        subs.extend(
-            iproduct!(xsubs.iter(), ysubs.iter())
-                .map(|(&ix, &iy)| Box2::new(ix, iy))
-        );
-        subs
-    }
-
-    fn contains(&self, elem: &Vec2<T>) -> bool {
-        self.x.contains(&elem.x) && self.y.contains(&elem.y)
-    }
-}
+impl_box!(Box3, x, y, z);
+impl_partition_for_box!(Box3, Vec3, x, y, z);
 
 
 #[cfg(test)]
