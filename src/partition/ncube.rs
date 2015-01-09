@@ -3,6 +3,7 @@
 use std::ops::{Index, IndexMut};
 use std::num::{Int, cast};
 use std::cmp::PartialOrd;
+use std::iter::AdditiveIterator;
 use nalgebra::{Dim, BaseFloat, Zero, zero};
 use partition::Partition;
 
@@ -64,6 +65,12 @@ impl<P, S> Partition<P> for Ncube<P, S>
                 let off = (self.center[i] - elem[i]) * _2;
                 (-self.width <= off) && (off < self.width)
             })
+    }
+
+    fn dispatch(&self, elem: &P) -> uint {
+        range(0, Dim::dim(None::<P>))
+            .map(|k| if elem[k] < self.center[k] {0} else {1 << k})
+            .sum()
     }
 }
 
