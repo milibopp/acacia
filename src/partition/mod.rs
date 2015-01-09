@@ -23,6 +23,21 @@ pub trait Partition<T>: Sized {
     /// Does the partition contain an element?
     fn contains(&self, elem: &T) -> bool;
 
+    /// Dispatch an element to the correct subpartition
+    ///
+    /// The default implementation works, if the totality proposition is
+    /// fulfilled. However, note that its performance is not optimal, as it
+    /// checks for all subpartitions whether they contain the element, until one
+    /// is found that does.
+    fn dispatch(&self, elem: &T) -> uint {
+        for (i, part) in self.subdivide().iter().enumerate() {
+            if part.contains(elem) {
+                return i;
+            }
+        }
+        panic!("partition dispatch impossible");
+    }
+
     /// Totality proposition
     ///
     /// A partition is required to be total, i.e. any element contained in the

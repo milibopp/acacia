@@ -37,14 +37,8 @@ impl<P, O> PureTree<P, O>
         tree
     }
 
-    fn dispatch(nodes: &mut Vec<PureTree<P, O>>, object: O) {
-        for node in nodes.iter_mut() {
-            if node.partition.contains(&object.position()) {
-                node.insert(object);
-                return;
-            }
-        }
-        panic!("object could not be inserted into the tree");
+    fn dispatch(&self, nodes: &mut Vec<PureTree<P, O>>, object: O) {
+        nodes[self.partition.dispatch(&object.position())].insert(object)
     }
 
     fn insert(&mut self, object: O) {
@@ -57,12 +51,12 @@ impl<P, O> PureTree<P, O>
                     .into_iter()
                     .map(|p| PureTree::empty(p))
                     .collect();
-                PureTree::dispatch(&mut nodes, object);
-                PureTree::dispatch(&mut nodes, other);
+                self.dispatch(&mut nodes, object);
+                self.dispatch(&mut nodes, other);
                 NodeState::Branch(nodes)
             },
             NodeState::Branch(mut nodes) => {
-                PureTree::dispatch(&mut nodes, object);
+                self.dispatch(&mut nodes, object);
                 NodeState::Branch(nodes)
             }
         };
@@ -147,14 +141,8 @@ impl<P, O, D> Tree<P,  O, D>
           P: Partition<<O as Position>::Point>,
           D: Clone,
 {
-    fn dispatch(nodes: &mut Vec<Tree<P, O, D>>, object: O, default: D) {
-        for node in nodes.iter_mut() {
-            if node.partition.contains(&object.position()) {
-                node.insert(object, default);
-                return;
-            }
-        }
-        panic!("object could not be inserted into the tree");
+    fn dispatch(&self, nodes: &mut Vec<Tree<P, O, D>>, object: O, default: D) {
+        nodes[self.partition.dispatch(&object.position())].insert(object, default)
     }
 
     /// Inserts a new object into the tree
@@ -171,12 +159,12 @@ impl<P, O, D> Tree<P,  O, D>
                     .into_iter()
                     .map(|p| Tree::empty(p, default.clone()))
                     .collect();
-                Tree::dispatch(&mut nodes, object, default.clone());
-                Tree::dispatch(&mut nodes, other, default.clone());
+                self.dispatch(&mut nodes, object, default.clone());
+                self.dispatch(&mut nodes, other, default.clone());
                 NodeState::Branch(nodes)
             },
             NodeState::Branch(mut nodes) => {
-                Tree::dispatch(&mut nodes, object, default.clone());
+                self.dispatch(&mut nodes, object, default.clone());
                 NodeState::Branch(nodes)
             },
         };
