@@ -2,9 +2,11 @@
 
 pub use partition::interval::Interval;
 pub use partition::boxes::{Box2, Box3};
+pub use partition::ncube::Ncube;
 
 mod interval;
 mod boxes;
+mod ncube;
 
 
 /// A type describing a partition of some space
