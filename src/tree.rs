@@ -181,7 +181,7 @@ mod test {
 
     #[test]
     fn positionable_by_ref() {
-        fn twice_pos<O: Positionable<Point=int>>(obj: O) -> int {
+        fn twice_pos<O: Position<Point=int>>(obj: O) -> int {
             2 * obj.position()
         }
         let obj = Positioned { object: 1u, position: 77i };

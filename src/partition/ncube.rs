@@ -9,8 +9,11 @@ use partition::Partition;
 /// An N-cube based partitioning scheme
 #[derive(Copy, Clone)]
 pub struct Ncube<P, S> {
-    center: P,
-    width: S,
+    /// The center of the N-cube
+    pub center: P,
+
+    /// The width of the N-cube
+    pub width: S,
 }
 
 impl<P, S> Ncube<P, S> {
