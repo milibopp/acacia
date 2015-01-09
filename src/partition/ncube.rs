@@ -2,25 +2,32 @@
 
 use std::ops::{Index, IndexMut};
 use std::num::{Int, cast};
-use nalgebra::{Dim, BaseFloat};
+use std::cmp::PartialOrd;
+use nalgebra::{Dim, BaseFloat, Zero, zero};
 use partition::Partition;
 
 
 /// An N-cube based partitioning scheme
 #[derive(Copy, Clone)]
 pub struct Ncube<P, S> {
-    /// The center of the N-cube
-    pub center: P,
-
-    /// The width of the N-cube
-    pub width: S,
+    center: P,
+    width: S,
 }
 
-impl<P, S> Ncube<P, S> {
+impl<P, S: PartialOrd + Zero> Ncube<P, S> {
     /// Create a new N-cube given its center and width
     pub fn new(center: P, width: S) -> Ncube<P, S> {
+        assert!(width > zero());
         Ncube { center: center, width: width }
     }
+}
+
+impl<P: Copy, S: Copy> Ncube<P, S> {
+    /// The width of the N-cube
+    pub fn width(&self) -> S { self.width }
+
+    /// The center of the N-cube
+    pub fn center(&self) -> P { self.center }
 }
 
 impl<P, S> Partition<P> for Ncube<P, S>
@@ -66,15 +73,20 @@ mod test {
     use super::*;
     use partition::Partition;
     use nalgebra::Pnt2;
-    use quickcheck::quickcheck;
+    use quickcheck::{quickcheck, TestResult};
 
     #[test]
     fn ncube_total() {
-        fn ncube_total(center: (f64, f64), width: f64, elem: (f64, f64)) -> bool {
-            let center = Pnt2::new(center.0, center.1);
-            let elem = Pnt2::new(elem.0, elem.1);
-            Ncube::new(center, width).prop_is_total(&elem)
+        fn ncube_total(center: (f64, f64), width: f64, elem: (f64, f64)) -> TestResult {
+            if width > 0.0 {
+                let center = Pnt2::new(center.0, center.1);
+                let elem = Pnt2::new(elem.0, elem.1);
+                TestResult::from_bool(Ncube::new(center, width).prop_is_total(&elem))
+            }
+            else {
+                TestResult::discard()
+            }
         }
-        quickcheck(ncube_total as fn((f64, f64), f64, (f64, f64)) -> bool);
+        quickcheck(ncube_total as fn((f64, f64), f64, (f64, f64)) -> TestResult);
     }
 }

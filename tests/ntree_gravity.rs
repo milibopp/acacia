@@ -122,8 +122,8 @@ fn tree_gravity_approx() {
             &|node| {
                 let &(ref center_of_mass, _) = node.data();
                 let d = FloatPnt::dist(&test_point, center_of_mass);
-                let delta = FloatPnt::dist(&node.partition().center, center_of_mass);
-                d < node.partition().width / theta + delta
+                let delta = FloatPnt::dist(&node.partition().center(), center_of_mass);
+                d < node.partition().width() / theta + delta
             },
             &mut |&(com, m)| {
                 tree_gravity = tree_gravity + newton((m, com), test_point);

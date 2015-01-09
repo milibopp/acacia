@@ -411,7 +411,7 @@ mod test {
                 .map(|_| {
                     let mut i = 0u;
                     tree.query_objects(
-                        &|node| node.partition().center.dist(&Orig::orig()) < search_radius + node.partition().width / 2.0,
+                        &|node| node.partition().center().dist(&Orig::orig()) < search_radius + node.partition().width() / 2.0,
                         &mut |other| if other.position.dist(&Orig::orig()) < search_radius {i += 1},
                     );
                     i
