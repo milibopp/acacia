@@ -15,5 +15,4 @@ extern crate test;
 
 pub mod ntree;
 pub mod tree;
-pub mod util;
 pub mod partition;
