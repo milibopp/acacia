@@ -10,8 +10,13 @@ debug = false
 [dependencies.nalgebra]
 git = "https://github.com/sebcrozet/nalgebra"
 
-[dev-dependencies.quickcheck]
-git = "https://github.com/BurntSushi/quickcheck"
+[dev-dependencies.nalgebra]
+git = "https://github.com/sebcrozet/nalgebra"
+features = ["arbitrary"]
 
-[dev-dependencies.quickcheck_macros]
-git = "https://github.com/BurntSushi/quickcheck"
+[dependencies.itertools]
+git = "https://github.com/bluss/rust-itertools"
+
+[dev-dependencies]
+quickcheck = "*"
+quickcheck_macros = "*"

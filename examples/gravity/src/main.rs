@@ -1,3 +1,5 @@
+#![allow(unstable)]
+
 extern crate nalgebra;
 extern crate acacia;
 
@@ -5,8 +7,9 @@ use std::rand::thread_rng;
 use std::rand::distributions::{Range, IndependentSample};
 use std::num::Float;
 use nalgebra::{Pnt3, Vec3, FloatPnt, Norm, Orig, zero};
-use acacia::ntree::NTree;
-use acacia::tree::{DataQuery, Node, AssociatedData, Positionable};
+use acacia::ntree::Tree;
+use acacia::tree::{DataQuery, Node, AssociatedData, Position};
+use acacia::partition::Ncube;
 
 /// Point mass
 struct PointMass {
@@ -14,7 +17,8 @@ struct PointMass {
     position: Pnt3<f64>,
 }
 
-impl Positionable<Pnt3<f64>> for PointMass {
+impl Position for PointMass {
+    type Point = Pnt3<f64>;
     fn position(&self) -> Pnt3<f64> {
         self.position
     }
@@ -36,7 +40,7 @@ fn main() {
     // Generate a number of particles
     let mut rng = thread_rng();
     let coord_range = Range::new(-5.0, 5.0);
-    let particles: Vec<_> = range(0u, 1000).map(|_|
+    let particles: Vec<_> = (0..1000).map(|_|
         PointMass { mass: 1.0, position: Pnt3::new(
             coord_range.ind_sample(&mut rng),
             coord_range.ind_sample(&mut rng),
@@ -44,11 +48,14 @@ fn main() {
         .collect();
 
     // Construct the tree
-    let tree = NTree::from_iter(
+    let tree = Tree::new(
 
         // Pass in an iterator over the objects to store in the tree
         // In this case we pass in &PointMass, which implements Positionable.
         particles.iter(),
+
+        // Shape of the root node
+        Ncube::new(origin, 11.0),
 
         // The value for the associated data of empty nodes. Here, we associate
         // a center of mass and a total mass to each node.
@@ -81,8 +88,8 @@ fn main() {
         &|node| {
             let &(ref center_of_mass, _) = node.data();
             let d = test_point.dist(center_of_mass);
-            let delta: f64 = node.center().dist(center_of_mass);
-            d < 2.0 * *node.width() + delta
+            let delta: f64 = node.partition().center().dist(center_of_mass);
+            d < 2.0 * node.partition().width() + delta
         },
 
         // This collects our force term from each piece of associated data the
@@ -98,7 +105,7 @@ fn main() {
         .fold(zero(), |a: Vec3<f64>, b| a + b);
 
     // Print result of calculation
-    println!("Tree-computed gravity at {} is {} (exact: {})",
+    println!("Tree-computed gravity at {:?} is {:?} (exact: {:?})",
         test_point, tree_gravity, exact_gravity
     );
 }

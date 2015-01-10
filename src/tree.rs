@@ -1,5 +1,6 @@
 //! Common abstractions for all trees
 
+
 /// The state of a node
 ///
 /// A node may either be empty, a leaf with exactly one object or a branch with
@@ -29,11 +30,8 @@ pub enum NodeState<O, C> {
 /// tree and its constituents implement this.
 pub trait Node {
 
-    /// The underlying space partitioned by the node structure
-    type Point;
-
-    /// The scalar used
-    type Scalar;
+    /// Type of spatial partitioning scheme
+    type Partition;
 
     /// The type of object stored
     type Object;
@@ -42,13 +40,10 @@ pub trait Node {
     type Container;
 
     /// The state of the node
-    fn state(&self) -> &NodeState<<Self as Node>::Object, <Self as Node>::Container>;
+    fn state(&self) -> &NodeState<Self::Object, Self::Container>;
 
-    /// The center point of the node
-    fn center(&self) -> &<Self as Node>::Point;
-
-    /// The width of the node
-    fn width(&self) -> &<Self as Node>::Scalar;
+    /// The partitioning scheme
+    fn partition(&self) -> &Self::Partition;
 }
 
 
@@ -59,7 +54,7 @@ pub trait AssociatedData {
     type Data;
 
     /// Data associated to the node
-    fn data(&self) -> &<Self as AssociatedData>::Data;
+    fn data(&self) -> &Self::Data;
 }
 
 
@@ -129,16 +124,20 @@ pub trait DataQuery: AssociatedData {
 
 
 /// A type that has a notion of a position
-pub trait Positionable<P> {
+pub trait Position {
+    /// The underlying point type
+    type Point;
 
     /// The position
-    fn position(&self) -> P;
+    fn position(&self) -> Self::Point;
 }
 
-impl<'a, P, O> Positionable<P> for &'a O
-    where O: Positionable<P>
+impl<'a, O> Position for &'a O
+    where O: Position
 {
-    fn position(&self) -> P {
+    type Point = <O as Position>::Point;
+
+    fn position(&self) -> <O as Position>::Point {
         // Explicitly dereference here to avoid infinite recursion
         (*self).position()
     }
@@ -152,7 +151,6 @@ impl<'a, P, O> Positionable<P> for &'a O
 /// equips these with an additional generic position as an attribute.
 #[derive(Clone)]
 pub struct Positioned<O, P> {
-
     /// The object wrapped in this type
     pub object: O,
 
@@ -160,9 +158,11 @@ pub struct Positioned<O, P> {
     pub position: P,
 }
 
-impl<O, P> Positionable<P> for Positioned<O, P>
+impl<O, P> Position for Positioned<O, P>
     where P: Copy
 {
+    type Point = P;
+
     fn position(&self) -> P {
         self.position
     }
@@ -172,7 +172,7 @@ impl<O, P> Positionable<P> for Positioned<O, P>
 #[cfg(test)]
 mod test {
 
-    use super::{Positionable, Positioned};
+    use super::{Position, Positioned};
 
     #[test]
     fn positioned_position() {
@@ -181,7 +181,7 @@ mod test {
 
     #[test]
     fn positionable_by_ref() {
-        fn twice_pos<O: Positionable<int>>(obj: O) -> int {
+        fn twice_pos<O: Position<Point=int>>(obj: O) -> int {
             2 * obj.position()
         }
         let obj = Positioned { object: 1u, position: 77i };
