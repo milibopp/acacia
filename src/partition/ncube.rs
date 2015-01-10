@@ -3,13 +3,15 @@
 use std::ops::{Index, IndexMut};
 use std::num::{Int, cast};
 use std::cmp::PartialOrd;
-use std::iter::AdditiveIterator;
+use std::iter::{AdditiveIterator, repeat};
 use nalgebra::{Dim, BaseFloat, Zero, zero};
+#[cfg(test)]
+use quickcheck::{Arbitrary, Gen};
 use partition::Partition;
 
 
 /// An N-cube based partitioning scheme
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Show)]
 pub struct Ncube<P, S> {
     center: P,
     width: S,
@@ -74,26 +76,30 @@ impl<P, S> Partition<P> for Ncube<P, S>
     }
 }
 
+#[cfg(test)]
+impl<P: Arbitrary, S: PartialOrd + Zero + Arbitrary> Arbitrary for Ncube<P, S> {
+    fn arbitrary<G: Gen>(g: &mut G) -> Ncube<P, S> {
+        Ncube::new(
+            Arbitrary::arbitrary(g),
+            repeat(())
+                .map(|_| Arbitrary::arbitrary(g))
+                .filter(|w: &S| w > &zero())
+                .next()
+                .unwrap()
+        )
+    }
+}
+
 
 #[cfg(test)]
 mod test {
     use super::*;
-    use partition::Partition;
+    use partition::{Partition, prop_is_total};
     use nalgebra::Pnt2;
     use quickcheck::{quickcheck, TestResult};
 
     #[test]
     fn ncube_total() {
-        fn ncube_total(center: (f64, f64), width: f64, elem: (f64, f64)) -> TestResult {
-            if width > 0.0 {
-                let center = Pnt2::new(center.0, center.1);
-                let elem = Pnt2::new(elem.0, elem.1);
-                TestResult::from_bool(Ncube::new(center, width).prop_is_total(&elem))
-            }
-            else {
-                TestResult::discard()
-            }
-        }
-        quickcheck(ncube_total as fn((f64, f64), f64, (f64, f64)) -> TestResult);
+        quickcheck(prop_is_total as fn(Ncube<Pnt2<f64>, f64>, Pnt2<f64>) -> bool);
     }
 }
