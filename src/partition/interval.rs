@@ -1,7 +1,6 @@
 //! Interval partition
 
-use std::iter::repeat;
-#[cfg(test)]
+#[cfg(any(test, feature = "arbitrary"))]
 use quickcheck::{Arbitrary, Gen};
 use partition::{Partition, Mid};
 
@@ -40,6 +39,7 @@ impl<T: Mid + PartialOrd + Copy> Partition<T> for Interval<T> {
 #[cfg(any(test, feature = "arbitrary"))]
 impl<T: PartialOrd + Arbitrary> Arbitrary for Interval<T> {
     fn arbitrary<G: Gen>(g: &mut G) -> Interval<T> {
+        use std::iter::repeat;
         let a: T = Arbitrary::arbitrary(g);
         let b = repeat(())
             .map(|_| Arbitrary::arbitrary(g))

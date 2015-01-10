@@ -176,15 +176,15 @@ mod test {
 
     #[test]
     fn positioned_position() {
-        assert_eq!(Positioned { object: 1u, position: 14i }.position(), 14i);
+        assert_eq!(Positioned { object: (), position: 14 }.position(), 14);
     }
 
     #[test]
     fn positionable_by_ref() {
-        fn twice_pos<O: Position<Point=int>>(obj: O) -> int {
+        fn twice_pos<O: Position<Point=i32>>(obj: O) -> i32 {
             2 * obj.position()
         }
-        let obj = Positioned { object: 1u, position: 77i };
-        assert_eq!(twice_pos(&obj), 154i);
+        let obj = Positioned { object: (), position: 77 };
+        assert_eq!(twice_pos(&obj), 154);
     }
 }
