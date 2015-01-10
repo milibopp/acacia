@@ -1,5 +1,6 @@
 //! Simple integration tests oriented towards gravity computations
-#![cfg(test)]
+
+#![allow(unstable)] // FIXME: remove this towards Rust 1.0
 
 extern crate acacia;
 extern crate nalgebra;

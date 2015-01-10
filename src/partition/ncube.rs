@@ -3,9 +3,9 @@
 use std::ops::{Index, IndexMut};
 use std::num::{Int, cast};
 use std::cmp::PartialOrd;
-use std::iter::{AdditiveIterator, repeat};
+use std::iter::AdditiveIterator;
 use nalgebra::{Dim, BaseFloat, Zero, zero};
-#[cfg(test)]
+#[cfg(any(test, feature = "arbitrary"))]
 use quickcheck::{Arbitrary, Gen};
 use partition::Partition;
 
@@ -34,18 +34,18 @@ impl<P: Copy, S: Copy> Ncube<P, S> {
 }
 
 impl<P, S> Partition<P> for Ncube<P, S>
-    where P: Dim + Index<uint, Output=S> + IndexMut<uint, Output=S> + Copy,
+    where P: Dim + Index<usize, Output=S> + IndexMut<usize, Output=S> + Copy,
           S: BaseFloat + PartialOrd,
 {
     fn subdivide(&self) -> Vec<Ncube<P, S>> {
         let _2 = cast(2.0f64).unwrap();
         let dim = Dim::dim(None::<P>);
         let new_width = self.width / _2;
-        range(0u, 2.pow(dim))
+        (0..2.pow(dim))
             .map(|n| {
                 let mut new_center = self.center;
                 let dx = new_width / _2;
-                for i in range(0, dim) {
+                for i in (0..dim) {
                     new_center[i] = new_center[i] + match n / 2.pow(i) % 2 {
                         0 => -dx,
                         1 => dx,
@@ -62,14 +62,14 @@ impl<P, S> Partition<P> for Ncube<P, S>
 
     fn contains(&self, elem: &P) -> bool {
         let _2 = cast(2.0f64).unwrap();
-        range(0u, Dim::dim(None::<P>))
+        (0..Dim::dim(None::<P>))
             .all(|i| {
                 let off = (self.center[i] - elem[i]) * _2;
                 (-self.width <= off) && (off < self.width)
             })
     }
 
-    fn dispatch(&self, elem: &P) -> uint {
+    fn dispatch(&self, elem: &P) -> usize {
         range(0, Dim::dim(None::<P>))
             .map(|k| if elem[k] < self.center[k] {0} else {1 << k})
             .sum()
@@ -79,6 +79,7 @@ impl<P, S> Partition<P> for Ncube<P, S>
 #[cfg(any(test, feature = "arbitrary"))]
 impl<P: Arbitrary, S: PartialOrd + Zero + Arbitrary> Arbitrary for Ncube<P, S> {
     fn arbitrary<G: Gen>(g: &mut G) -> Ncube<P, S> {
+        use std::iter::repeat;
         Ncube::new(
             Arbitrary::arbitrary(g),
             repeat(())

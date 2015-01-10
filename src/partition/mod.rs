@@ -28,7 +28,7 @@ pub trait Partition<T>: Sized {
     /// fulfilled. However, note that its performance is not optimal, as it
     /// checks for all subpartitions whether they contain the element, until one
     /// is found that does.
-    fn dispatch(&self, elem: &T) -> uint {
+    fn dispatch(&self, elem: &T) -> usize {
         for (i, part) in self.subdivide().iter().enumerate() {
             if part.contains(elem) {
                 return i;

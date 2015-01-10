@@ -8,6 +8,7 @@ script:
     - rustc --version
     - cargo --version
     - cargo build --verbose
+    - cargo build --verbose --features arbitrary
     - cargo test --verbose
     - cargo bench --verbose
     # Build the examples
