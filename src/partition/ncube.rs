@@ -93,13 +93,8 @@ impl<P: Arbitrary, S: PartialOrd + Zero + Arbitrary> Arbitrary for Ncube<P, S> {
 
 #[cfg(test)]
 mod test {
-    use super::*;
-    use partition::{Partition, prop_is_total};
     use nalgebra::Pnt2;
-    use quickcheck::{quickcheck, TestResult};
+    use super::*;
 
-    #[test]
-    fn ncube_total() {
-        quickcheck(prop_is_total as fn(Ncube<Pnt2<f64>, f64>, Pnt2<f64>) -> bool);
-    }
+    partition_quickcheck!(ncube_pnt2_f32_partition, Ncube<Pnt2<f32>, f32>, Pnt2<f32>);
 }

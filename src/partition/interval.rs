@@ -54,16 +54,7 @@ impl<T: PartialOrd + Arbitrary> Arbitrary for Interval<T> {
 #[cfg(test)]
 mod test {
     use super::Interval;
-    use partition::{Partition, prop_is_total};
-    use quickcheck::{quickcheck, TestResult};
 
-    #[test]
-    fn interval_total_f32() {
-        quickcheck(prop_is_total as fn(Interval<f32>, f32) -> bool);
-    }
-
-    #[test]
-    fn interval_total_f64() {
-        quickcheck(prop_is_total as fn(Interval<f64>, f64) -> bool);
-    }
+    partition_quickcheck!(interval_f32_partition, Interval<f32>, f32);
+    partition_quickcheck!(interval_f64_partition, Interval<f64>, f64);
 }

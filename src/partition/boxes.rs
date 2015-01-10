@@ -76,30 +76,11 @@ impl_arb_for_box!(Box3, x, y, z);
 
 #[cfg(test)]
 mod test {
-    use quickcheck::{quickcheck, TestResult};
     use nalgebra::{Vec2, Vec3};
-
     use super::*;
-    use partition::{Partition, prop_is_total};
 
-
-    #[test]
-    fn box2_total_f32() {
-        quickcheck(prop_is_total as fn(Box2<f32>, Vec2<f32>) -> bool);
-    }
-
-    #[test]
-    fn box2_total_f64() {
-        quickcheck(prop_is_total as fn(Box2<f64>, Vec2<f64>) -> bool);
-    }
-
-    #[test]
-    fn box3_total_f32() {
-        quickcheck(prop_is_total as fn(Box3<f32>, Vec3<f32>) -> bool);
-    }
-
-    #[test]
-    fn box3_total_f64() {
-        quickcheck(prop_is_total as fn(Box3<f64>, Vec3<f64>) -> bool);
-    }
+    partition_quickcheck!(box2_f32_partition, Box2<f32>, Vec2<f32>);
+    partition_quickcheck!(box2_f64_partition, Box2<f64>, Vec2<f64>);
+    partition_quickcheck!(box3_f32_partition, Box3<f32>, Vec3<f32>);
+    partition_quickcheck!(box3_f64_partition, Box3<f64>, Vec3<f64>);
 }

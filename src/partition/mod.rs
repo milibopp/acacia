@@ -4,10 +4,6 @@ pub use partition::interval::Interval;
 pub use partition::boxes::{Box2, Box3};
 pub use partition::ncube::Ncube;
 
-mod interval;
-mod boxes;
-mod ncube;
-
 
 /// A type describing a partition of some space
 ///
@@ -60,6 +56,34 @@ pub fn prop_is_total<P: Partition<T>, T>(partition: P, elem: T) -> bool {
 }
 
 
+/// Consistency of dispatch mechanism
+///
+/// An element contained in the partition must be dispatched consistently, i.e.
+/// the subpartition to which it is dispatched must contain it.
+pub fn prop_consistent_dispatch<P: Partition<T>, T>(partition: P, elem: T) -> bool {
+    if partition.contains(&elem) {
+        partition.subdivide()[partition.dispatch(&elem)].contains(&elem)
+    }
+    else {
+        true
+    }
+}
+
+
+#[macro_escape]
+macro_rules! partition_quickcheck (
+    ($testfn: ident, $p: ty, $t: ty) => (
+        #[test]
+        fn $testfn() {
+            use $crate::partition::{prop_is_total, prop_consistent_dispatch};
+            use quickcheck::quickcheck;
+            quickcheck(prop_is_total as fn($p, $t) -> bool);
+            quickcheck(prop_consistent_dispatch as fn($p, $t) -> bool);
+        }
+    )
+);
+
+
 /// The notion of a mid point between two inputs
 trait Mid {
     /// Return the mid between this point and another
@@ -73,3 +97,8 @@ impl Mid for f64 {
 impl Mid for f32 {
     fn mid(&self, other: &f32) -> f32 { (*self + *other) / 2.0 }
 }
+
+
+mod interval;
+mod boxes;
+mod ncube;
