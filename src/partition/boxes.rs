@@ -1,7 +1,7 @@
 //! Box partitioning
 
 use nalgebra::{Vec2, Vec3};
-#[cfg(test)]
+#[cfg(any(test, feature = "arbitrary"))]
 use quickcheck::{Arbitrary, Gen};
 use partition::{Partition, Interval, Mid};
 
