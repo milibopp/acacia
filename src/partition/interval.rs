@@ -1,10 +1,13 @@
 //! Interval partition
 
+use std::iter::repeat;
+#[cfg(test)]
+use quickcheck::{Arbitrary, Gen};
 use partition::{Partition, Mid};
 
 
 /// A half-open interval [a, b) between two points a and b
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Show)]
 pub struct Interval<T> {
     start: T,
     end: T,
@@ -34,21 +37,33 @@ impl<T: Mid + PartialOrd + Copy> Partition<T> for Interval<T> {
     }
 }
 
+#[cfg(test)]
+impl<T: PartialOrd + Arbitrary> Arbitrary for Interval<T> {
+    fn arbitrary<G: Gen>(g: &mut G) -> Interval<T> {
+        let a: T = Arbitrary::arbitrary(g);
+        let b = repeat(())
+            .map(|_| Arbitrary::arbitrary(g))
+            .filter(|b: &T| b > &a)
+            .next()
+            .unwrap();
+        Interval::new(a, b)
+    }
+}
+
 
 #[cfg(test)]
 mod test {
     use super::Interval;
-    use partition::Partition;
+    use partition::{Partition, prop_is_total};
     use quickcheck::{quickcheck, TestResult};
 
     #[test]
+    fn interval_total_f32() {
+        quickcheck(prop_is_total as fn(Interval<f32>, f32) -> bool);
+    }
+
+    #[test]
     fn interval_total_f64() {
-        fn interval_total_f64((a, b): (f64, f64), c: f64) -> TestResult {
-            if b < a { TestResult::discard() }
-            else { TestResult::from_bool({
-                Interval::new(a, b).prop_is_total(&c)
-            })}
-        }
-        quickcheck(interval_total_f64 as fn((f64, f64), f64) -> TestResult);
+        quickcheck(prop_is_total as fn(Interval<f64>, f64) -> bool);
     }
 }

@@ -10,6 +10,9 @@ mod ncube;
 
 
 /// A type describing a partition of some space
+///
+/// In addition to this trait signature an implementation is required to satisfy
+/// `prop_is_total`.
 pub trait Partition<T>: Sized {
     // TODO: uncomment the following, as soon as this bug is fixed.
     // link: https://github.com/rust-lang/rust/issues/20551
@@ -37,21 +40,22 @@ pub trait Partition<T>: Sized {
         }
         panic!("partition dispatch impossible");
     }
+}
 
-    /// Totality proposition
-    ///
-    /// A partition is required to be total, i.e. any element contained in the
-    /// partition will be contained in exactly one of its subdivided partitions.
-    /// At the same time, an element not contained in the partition can not be
-    /// contained by any subdivided partition.
-    fn prop_is_total(&self, elem: &T) -> bool {
-        let subs = self.subdivide();
-        if self.contains(elem) {
-            subs.iter().filter(|sub| sub.contains(elem)).count() == 1
-        }
-        else {
-            subs.iter().all(|sub| !sub.contains(elem))
-        }
+
+/// Totality proposition
+///
+/// A partition is required to be total, i.e. any element contained in the
+/// partition will be contained in exactly one of its subdivided partitions.
+/// At the same time, an element not contained in the partition can not be
+/// contained by any subdivided partition.
+pub fn prop_is_total<P: Partition<T>, T>(partition: P, elem: T) -> bool {
+    let subs = partition.subdivide();
+    if partition.contains(&elem) {
+        subs.iter().filter(|sub| sub.contains(&elem)).count() == 1
+    }
+    else {
+        subs.iter().all(|sub| !sub.contains(&elem))
     }
 }
 

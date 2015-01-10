@@ -1,6 +1,8 @@
 //! Box partitioning
 
 use nalgebra::{Vec2, Vec3};
+#[cfg(test)]
+use quickcheck::{Arbitrary, Gen};
 use partition::{Partition, Interval, Mid};
 
 
@@ -35,9 +37,20 @@ macro_rules! impl_partition_for_box {
     )
 }
 
+macro_rules! impl_arb_for_box {
+    ($b: ident, $($param: ident),*) => (
+        #[cfg(test)]
+        impl<T: PartialOrd + Arbitrary> Arbitrary for $b<T> {
+            fn arbitrary<G: Gen>(g: &mut G) -> $b<T> {
+                $b { $($param: Arbitrary::arbitrary(g)),* }
+            }
+        }
+    )
+}
+
 
 /// A 2d box of intervals
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Show)]
 pub struct Box2<T> {
     x: Interval<T>,
     y: Interval<T>,
@@ -45,10 +58,11 @@ pub struct Box2<T> {
 
 impl_box!(Box2, x, y);
 impl_partition_for_box!(Box2, Vec2, x, y);
+impl_arb_for_box!(Box2, x, y);
 
 
 /// A 3d box of intervals
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Show)]
 pub struct Box3<T> {
     x: Interval<T>,
     y: Interval<T>,
@@ -57,3 +71,35 @@ pub struct Box3<T> {
 
 impl_box!(Box3, x, y, z);
 impl_partition_for_box!(Box3, Vec3, x, y, z);
+impl_arb_for_box!(Box3, x, y, z);
+
+
+#[cfg(test)]
+mod test {
+    use quickcheck::{quickcheck, TestResult};
+    use nalgebra::{Vec2, Vec3};
+
+    use super::*;
+    use partition::{Partition, prop_is_total};
+
+
+    #[test]
+    fn box2_total_f32() {
+        quickcheck(prop_is_total as fn(Box2<f32>, Vec2<f32>) -> bool);
+    }
+
+    #[test]
+    fn box2_total_f64() {
+        quickcheck(prop_is_total as fn(Box2<f64>, Vec2<f64>) -> bool);
+    }
+
+    #[test]
+    fn box3_total_f32() {
+        quickcheck(prop_is_total as fn(Box3<f32>, Vec3<f32>) -> bool);
+    }
+
+    #[test]
+    fn box3_total_f64() {
+        quickcheck(prop_is_total as fn(Box3<f64>, Vec3<f64>) -> bool);
+    }
+}
