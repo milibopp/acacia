@@ -37,7 +37,7 @@ impl<T: Mid + PartialOrd + Copy> Partition<T> for Interval<T> {
     }
 }
 
-#[cfg(test)]
+#[cfg(any(test, feature = "arbitrary"))]
 impl<T: PartialOrd + Arbitrary> Arbitrary for Interval<T> {
     fn arbitrary<G: Gen>(g: &mut G) -> Interval<T> {
         let a: T = Arbitrary::arbitrary(g);

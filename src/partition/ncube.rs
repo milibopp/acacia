@@ -76,7 +76,7 @@ impl<P, S> Partition<P> for Ncube<P, S>
     }
 }
 
-#[cfg(test)]
+#[cfg(any(test, feature = "arbitrary"))]
 impl<P: Arbitrary, S: PartialOrd + Zero + Arbitrary> Arbitrary for Ncube<P, S> {
     fn arbitrary<G: Gen>(g: &mut G) -> Ncube<P, S> {
         Ncube::new(

@@ -39,7 +39,7 @@ macro_rules! impl_partition_for_box {
 
 macro_rules! impl_arb_for_box {
     ($b: ident, $($param: ident),*) => (
-        #[cfg(test)]
+        #[cfg(any(test, feature = "arbitrary"))]
         impl<T: PartialOrd + Arbitrary> Arbitrary for $b<T> {
             fn arbitrary<G: Gen>(g: &mut G) -> $b<T> {
                 $b { $($param: Arbitrary::arbitrary(g)),* }

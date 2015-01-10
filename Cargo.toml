@@ -7,6 +7,9 @@ authors = ["Eduard Bopp <eduard.bopp@aepsil0n.de>"]
 [profile.test]
 debug = false
 
+[features]
+arbitrary = ["nalgebra/arbitrary"]
+
 [dependencies.nalgebra]
 git = "https://github.com/sebcrozet/nalgebra"
 
