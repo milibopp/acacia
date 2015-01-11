@@ -30,7 +30,7 @@ impl Subdivide for UnitQuad {
             .iter()
             .map(|&(di, dj)| {
                 let [i, j] = self.offset;
-                UnitQuad::new(self.scale + 1, [i + di, j + dj])
+                UnitQuad::new(self.scale + 1, [i * 2 + di, j * 2 + dj])
             })
             .collect()
     }
@@ -60,7 +60,6 @@ impl Arbitrary for UnitQuad {
             g.gen_range(0, max_scale)
         };
         let max_offset = 2.pow(scale as usize);
-        println!("{:?}", (scale, max_offset));
         UnitQuad::new(scale, [
             g.gen_range(0, max_offset),
             g.gen_range(0, max_offset),
@@ -73,7 +72,21 @@ impl Arbitrary for UnitQuad {
 mod test {
     pub use nalgebra::Vec2;
     pub use super::*;
+    use quickcheck::{quickcheck, TestResult};
+    use partition::Partition;
 
     partition_quickcheck!(unitquad_vec2_f32, UnitQuad, Vec2<f32>);
     partition_quickcheck!(unitquad_vec2_f64, UnitQuad, Vec2<f64>);
+
+    #[test]
+    fn unitquad_base_contains_region() {
+        fn check(v: Vec2<f64>) -> TestResult {
+            if v.x < 0.0 || v.x >= 1.0 || v.y < 0.0 || v.y >= 1.0 {
+                TestResult::discard()
+            } else {
+                TestResult::from_bool(UnitQuad::new(0, [0, 0]).contains(&v))
+            }
+        }
+        quickcheck(check as fn(Vec2<f64>) -> TestResult);
+    }
 }
