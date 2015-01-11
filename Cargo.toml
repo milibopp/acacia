@@ -16,16 +16,16 @@ debug = false
 [features]
 arbitrary = ["nalgebra/arbitrary"]
 
+[dev-dependencies]
+quickcheck = "*"
+quickcheck_macros = "*"
+
 [dependencies.nalgebra]
 git = "https://github.com/sebcrozet/nalgebra"
-
-[dev-dependencies.nalgebra]
-git = "https://github.com/sebcrozet/nalgebra"
-features = ["arbitrary"]
 
 [dependencies.itertools]
 git = "https://github.com/bluss/rust-itertools"
 
-[dev-dependencies]
-quickcheck = "*"
-quickcheck_macros = "*"
+[dev-dependencies.nalgebra]
+git = "https://github.com/sebcrozet/nalgebra"
+features = ["arbitrary"]
