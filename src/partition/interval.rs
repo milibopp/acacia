@@ -2,7 +2,7 @@
 
 #[cfg(any(test, feature = "arbitrary"))]
 use quickcheck::{Arbitrary, Gen};
-use partition::{Partition, Mid};
+use partition::{Partition, Subdivide, Mid};
 
 
 /// A half-open interval [a, b) between two points a and b
@@ -22,7 +22,7 @@ impl<T: PartialOrd> Interval<T> {
     }
 }
 
-impl<T: Mid + PartialOrd + Copy> Partition<T> for Interval<T> {
+impl<T: Mid + Copy> Subdivide for Interval<T> {
     fn subdivide(&self) -> Vec<Interval<T>> {
         let mid = self.start.mid(&self.end);
         vec![
@@ -30,7 +30,9 @@ impl<T: Mid + PartialOrd + Copy> Partition<T> for Interval<T> {
             Interval { start: mid, end: self.end },
         ]
     }
+}
 
+impl<T: Mid + PartialOrd + Copy> Partition<T> for Interval<T> {
     fn contains(&self, elem: &T) -> bool {
         (self.start <= *elem) && (*elem < self.end)
     }
@@ -53,7 +55,7 @@ impl<T: PartialOrd + Arbitrary> Arbitrary for Interval<T> {
 
 #[cfg(test)]
 mod test {
-    use super::Interval;
+    pub use super::Interval;
 
     partition_quickcheck!(interval_f32_partition, Interval<f32>, f32);
     partition_quickcheck!(interval_f64_partition, Interval<f64>, f64);
