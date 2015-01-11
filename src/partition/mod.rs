@@ -5,6 +5,8 @@ pub use partition::boxes::{Box2, Box3};
 pub use partition::ncube::Ncube;
 pub use partition::unitquad::UnitQuad;
 
+#[cfg(any(test, feature = "arbitrary"))]
+use quickcheck::TestResult;
 
 /// A type describing a partition of some space
 ///
@@ -40,19 +42,39 @@ pub trait Partition<T>: Sized {
 }
 
 
-/// Totality proposition
+/// Totality proposition (contained)
 ///
-/// A partition is required to be total, i.e. any element contained in the
-/// partition will be contained in exactly one of its subdivided partitions.
-/// At the same time, an element not contained in the partition can not be
-/// contained by any subdivided partition.
-pub fn prop_is_total<P: Partition<T>, T>(partition: P, elem: T) -> bool {
-    let subs = partition.subdivide();
+/// Any element contained in the partition will be contained in exactly one of
+/// its subpartitions.
+#[cfg(any(test, feature = "arbitrary"))]
+pub fn prop_is_total_elem<P: Partition<T>, T>(partition: P, elem: T) -> TestResult {
     if partition.contains(&elem) {
-        subs.iter().filter(|sub| sub.contains(&elem)).count() == 1
+        TestResult::from_bool(
+            partition.subdivide().iter()
+                .filter(|sub| sub.contains(&elem)).count()
+            == 1
+        )
     }
     else {
-        subs.iter().all(|sub| !sub.contains(&elem))
+        TestResult::discard()
+    }
+}
+
+
+/// Totality proposition (not contained)
+///
+/// If a partition does not contain an element, none of its subpartitions
+/// contain it either.
+#[cfg(any(test, feature = "arbitrary"))]
+pub fn prop_is_total_non_elem<P: Partition<T>, T>(partition: P, elem: T) -> TestResult {
+    if partition.contains(&elem) {
+        TestResult::discard()
+    }
+    else {
+        TestResult::from_bool(
+            partition.subdivide().iter()
+                .all(|sub| !sub.contains(&elem))
+        )
     }
 }
 
@@ -61,12 +83,13 @@ pub fn prop_is_total<P: Partition<T>, T>(partition: P, elem: T) -> bool {
 ///
 /// An element contained in the partition must be dispatched consistently, i.e.
 /// the subpartition to which it is dispatched must contain it.
-pub fn prop_consistent_dispatch<P: Partition<T>, T>(partition: P, elem: T) -> bool {
+#[cfg(any(test, feature = "arbitrary"))]
+pub fn prop_consistent_dispatch<P: Partition<T>, T>(partition: P, elem: T) -> TestResult {
     if partition.contains(&elem) {
-        partition.subdivide()[partition.dispatch(&elem)].contains(&elem)
+        TestResult::from_bool(partition.subdivide()[partition.dispatch(&elem)].contains(&elem))
     }
     else {
-        true
+        TestResult::discard()
     }
 }
 
@@ -75,18 +98,26 @@ pub fn prop_consistent_dispatch<P: Partition<T>, T>(partition: P, elem: T) -> bo
 macro_rules! partition_quickcheck (
     ($testfn: ident, $p: ty, $t: ty) => (
         mod $testfn {
-            use $crate::partition::{prop_is_total, prop_consistent_dispatch};
-            use quickcheck::quickcheck;
+            use $crate::partition::{
+                prop_is_total_elem, prop_is_total_non_elem,
+                prop_consistent_dispatch
+            };
+            use quickcheck::{quickcheck, TestResult};
             use super::*;
 
             #[test]
-            fn is_total() {
-                quickcheck(prop_is_total as fn($p, $t) -> bool);
+            fn is_total_elem() {
+                quickcheck(prop_is_total_elem as fn($p, $t) -> TestResult);
+            }
+
+            #[test]
+            fn is_total_non_elem() {
+                quickcheck(prop_is_total_non_elem as fn($p, $t) -> TestResult);
             }
 
             #[test]
             fn consistent_dispatch() {
-                quickcheck(prop_consistent_dispatch as fn($p, $t) -> bool);
+                quickcheck(prop_consistent_dispatch as fn($p, $t) -> TestResult);
             }
         }
     )
