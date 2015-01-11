@@ -3,6 +3,7 @@
 pub use partition::interval::Interval;
 pub use partition::boxes::{Box2, Box3};
 pub use partition::ncube::Ncube;
+pub use partition::unitquad::UnitQuad;
 
 
 /// A type describing a partition of some space
@@ -110,3 +111,4 @@ impl Mid for f32 {
 mod interval;
 mod boxes;
 mod ncube;
+mod unitquad;
