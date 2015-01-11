@@ -35,15 +35,17 @@ acceleration at a given point between a set of gravitating particles. The code
 presented here is an excerpt from a complete example you can find in the
 directory `example/gravity`.
 
-The tree can be constructed from an iterator over particles.
+The tree can be constructed from an iterator over particles and some data about
+its geometry.
 
 ```rust
-let tree = NTree::from_iter(
+let tree = Tree::new(
     particles.iter(),
+    Ncube::new(origin, 11.0),
 ```
 
-Note that `&PointMass` implements `Positionable` here, a trait used to define
-the notion that a type has a position.
+Note, that the particles implement the `Position` trait used to define the
+notion that a type has a position.
 
 Next we need a couple of values and closures to associate data with each node in
 the tree: a value for empty nodes, a closure that assigns a value to a leaf node
@@ -79,8 +81,8 @@ tree.query_data(
     &|node| {
         let &(ref center_of_mass, _) = node.data();
         let d = test_point.dist(center_of_mass);
-        let delta: f64 = node.center().dist(center_of_mass);
-        d < 2.0 * *node.width() + delta
+        let delta: f64 = node.partition().center().dist(center_of_mass);
+        d < 2.0 * node.partition().width() + delta
     },
 
     &mut |&(center_of_mass, mass)| {
