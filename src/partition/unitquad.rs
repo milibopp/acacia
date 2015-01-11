@@ -53,6 +53,11 @@ impl<T: BaseFloat> Partition<Vec2<T>> for UnitQuad
 impl Arbitrary for UnitQuad {
     fn arbitrary<G: Gen>(g: &mut G) -> UnitQuad {
         use std::cmp;
+        // FIXME: somehow this explicit usage of the `Rng` trait is required for
+        // the `.gen_range` calls, even though `Rng: Gen`. The compiler
+        // complains that the "source trait is private". Curiously, adding this
+        // import here fixes the same situation in the `cubemap` module as well.
+        use std::rand::Rng;
         let scale: u8 = {
             // scale >= 32 is invalid (overflow)
             // At scale >= 31 subdivision fails
