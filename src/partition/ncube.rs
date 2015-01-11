@@ -7,7 +7,7 @@ use std::iter::AdditiveIterator;
 use nalgebra::{Dim, BaseFloat, Zero, zero};
 #[cfg(any(test, feature = "arbitrary"))]
 use quickcheck::{Arbitrary, Gen};
-use partition::Partition;
+use partition::{Partition, Subdivide};
 
 
 /// An N-cube based partitioning scheme
@@ -33,7 +33,7 @@ impl<P: Copy, S: Copy> Ncube<P, S> {
     pub fn center(&self) -> P { self.center }
 }
 
-impl<P, S> Partition<P> for Ncube<P, S>
+impl<P, S> Subdivide for Ncube<P, S>
     where P: Dim + Index<usize, Output=S> + IndexMut<usize, Output=S> + Copy,
           S: BaseFloat + PartialOrd,
 {
@@ -59,7 +59,12 @@ impl<P, S> Partition<P> for Ncube<P, S>
             })
         .collect()
     }
+}
 
+impl<P, S> Partition<P> for Ncube<P, S>
+    where P: Dim + Index<usize, Output=S> + IndexMut<usize, Output=S> + Copy,
+          S: BaseFloat + PartialOrd,
+{
     fn contains(&self, elem: &P) -> bool {
         let _2 = cast(2.0f64).unwrap();
         (0..Dim::dim(None::<P>))
@@ -94,8 +99,8 @@ impl<P: Arbitrary, S: PartialOrd + Zero + Arbitrary> Arbitrary for Ncube<P, S> {
 
 #[cfg(test)]
 mod test {
-    use nalgebra::Pnt2;
-    use super::*;
+    pub use nalgebra::Pnt2;
+    pub use super::*;
 
     partition_quickcheck!(ncube_pnt2_f32_partition, Ncube<Pnt2<f32>, f32>, Pnt2<f32>);
 }
