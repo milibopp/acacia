@@ -130,8 +130,8 @@ fn tree_gravity_approx() {
                 tree_gravity = tree_gravity + newton((m, com), test_point);
             },
         );
-        // Now the tree gravity should approximate the exact one, within 5 %
-        TestResult::from_bool(simple_gravity.approx_eq_eps(&tree_gravity, &(0.05 * simple_gravity.norm())))
+        // Now the tree gravity should approximate the exact one, within 10 %
+        TestResult::from_bool(simple_gravity.approx_eq_eps(&tree_gravity, &(0.1 * simple_gravity.norm())))
     }
     quickcheck(tree_gravity_approx as fn(Vec<(f64, (f64, f64, f64))>, (f64, f64, f64)) -> TestResult)
 }
