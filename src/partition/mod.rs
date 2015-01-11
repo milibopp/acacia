@@ -8,20 +8,19 @@ pub use partition::unitquad::UnitQuad;
 #[cfg(any(test, feature = "arbitrary"))]
 use quickcheck::TestResult;
 
+
+/// A type that can be subdivided
+pub trait Subdivide {
+    /// Subdivide into smaller partitions
+    fn subdivide(&self) -> Vec<Self>;
+}
+
+
 /// A type describing a partition of some space
 ///
 /// In addition to this trait signature an implementation is required to satisfy
 /// `prop_is_total`.
-pub trait Partition<T>: Sized {
-    // TODO: uncomment the following, as soon as this bug is fixed.
-    // link: https://github.com/rust-lang/rust/issues/20551
-
-    // The type of subsequent partitions
-    // type Subpartition: Partition<T> = Self;
-
-    /// Subdivide into smaller partitions
-    fn subdivide(&self) -> Vec<Self>;
-
+pub trait Partition<T>: Subdivide + Sized {
     /// Does the partition contain an element?
     fn contains(&self, elem: &T) -> bool;
 

@@ -3,7 +3,7 @@
 use nalgebra::{Vec2, Vec3};
 #[cfg(any(test, feature = "arbitrary"))]
 use quickcheck::{Arbitrary, Gen};
-use partition::{Partition, Interval, Mid};
+use partition::{Partition, Subdivide, Interval, Mid};
 
 
 macro_rules! impl_box {
@@ -19,7 +19,7 @@ macro_rules! impl_box {
 
 macro_rules! impl_partition_for_box {
     ($b: ident, $v: ident, $($param: ident),*) => (
-        impl<T: Mid + PartialOrd + Copy> Partition<$v<T>> for $b<T> {
+        impl<T: Mid + PartialOrd + Copy> Subdivide for $b<T> {
             fn subdivide(&self) -> Vec<$b<T>> {
                 let mut subs = vec![];
                 $(let $param = self.$param.subdivide();)*
@@ -29,7 +29,9 @@ macro_rules! impl_partition_for_box {
                 );
                 subs
             }
+        }
 
+        impl<T: Mid + PartialOrd + Copy> Partition<$v<T>> for $b<T> {
             fn contains(&self, elem: &$v<T>) -> bool {
                 true $(&& self.$param.contains(&elem.$param))*
             }

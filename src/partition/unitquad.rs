@@ -2,7 +2,7 @@ use std::num::{Int, Float, cast};
 #[cfg(any(test, feature = "arbitrary"))]
 use quickcheck::{Arbitrary, Gen};
 use nalgebra::{Vec2, BaseFloat};
-use partition::Partition;
+use partition::{Partition, Subdivide};
 
 
 /// A partition of the unit quad [0, 1) × [0, 1)
@@ -24,8 +24,7 @@ impl UnitQuad {
     }
 }
 
-impl<T: BaseFloat> Partition<Vec2<T>> for UnitQuad
-{
+impl Subdivide for UnitQuad {
     fn subdivide(&self) -> Vec<UnitQuad> {
         [(0, 0), (0, 1), (1, 0), (1, 1)]
             .iter()
@@ -35,7 +34,10 @@ impl<T: BaseFloat> Partition<Vec2<T>> for UnitQuad
             })
             .collect()
     }
+}
 
+impl<T: BaseFloat> Partition<Vec2<T>> for UnitQuad
+{
     fn contains(&self, elem: &Vec2<T>) -> bool {
         let width = cast::<_, T>(0.5).unwrap().powi(self.scale as i32);
         let offset = Vec2::new(
