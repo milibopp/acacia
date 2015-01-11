@@ -53,7 +53,7 @@ impl<T: PartialOrd + Arbitrary> Arbitrary for Interval<T> {
 
 #[cfg(test)]
 mod test {
-    use super::Interval;
+    pub use super::Interval;
 
     partition_quickcheck!(interval_f32_partition, Interval<f32>, f32);
     partition_quickcheck!(interval_f64_partition, Interval<f64>, f64);
