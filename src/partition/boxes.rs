@@ -76,8 +76,8 @@ impl_arb_for_box!(Box3, x, y, z);
 
 #[cfg(test)]
 mod test {
-    use nalgebra::{Vec2, Vec3};
-    use super::*;
+    pub use nalgebra::{Vec2, Vec3};
+    pub use super::*;
 
     partition_quickcheck!(box2_f32_partition, Box2<f32>, Vec2<f32>);
     partition_quickcheck!(box2_f64_partition, Box2<f64>, Vec2<f64>);

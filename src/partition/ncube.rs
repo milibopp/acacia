@@ -94,8 +94,8 @@ impl<P: Arbitrary, S: PartialOrd + Zero + Arbitrary> Arbitrary for Ncube<P, S> {
 
 #[cfg(test)]
 mod test {
-    use nalgebra::Pnt2;
-    use super::*;
+    pub use nalgebra::Pnt2;
+    pub use super::*;
 
     partition_quickcheck!(ncube_pnt2_f32_partition, Ncube<Pnt2<f32>, f32>, Pnt2<f32>);
 }

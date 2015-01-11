@@ -73,12 +73,20 @@ pub fn prop_consistent_dispatch<P: Partition<T>, T>(partition: P, elem: T) -> bo
 #[macro_escape]
 macro_rules! partition_quickcheck (
     ($testfn: ident, $p: ty, $t: ty) => (
-        #[test]
-        fn $testfn() {
+        mod $testfn {
             use $crate::partition::{prop_is_total, prop_consistent_dispatch};
             use quickcheck::quickcheck;
-            quickcheck(prop_is_total as fn($p, $t) -> bool);
-            quickcheck(prop_consistent_dispatch as fn($p, $t) -> bool);
+            use super::*;
+
+            #[test]
+            fn is_total() {
+                quickcheck(prop_is_total as fn($p, $t) -> bool);
+            }
+
+            #[test]
+            fn consistent_dispatch() {
+                quickcheck(prop_consistent_dispatch as fn($p, $t) -> bool);
+            }
         }
     )
 );
