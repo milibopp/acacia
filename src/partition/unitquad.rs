@@ -22,6 +22,33 @@ impl UnitQuad {
         assert!(offset.iter().all(|&x| x < max_offset));
         UnitQuad { scale: scale, offset: offset }
     }
+
+    /// Integer scale
+    pub fn scale(&self) -> u8 { self.scale }
+
+    /// Integer offset
+    pub fn offset(&self) -> [u32; 2] { self.offset }
+
+    /// Get coordinate within the partition from (u, v) coordinates
+    pub fn coordinate<T: BaseFloat>(&self, coord: [T; 2]) -> Vec2<T> {
+        let [u, v] = coord;
+        let width: T = self.width();
+        Vec2::new(
+            width * (cast::<_, T>(self.offset[0]).unwrap() + u),
+            width * (cast::<_, T>(self.offset[1]).unwrap() + v),
+        )
+    }
+
+    /// Center of the partitioned region
+    pub fn center<T: BaseFloat>(&self) -> Vec2<T> {
+        let half = cast(0.5).unwrap();
+        self.coordinate([half, half])
+    }
+
+    /// Width of the partitioned region
+    pub fn width<T: BaseFloat>(&self) -> T {
+        cast::<_, T>(0.5).unwrap().powi(self.scale as i32)
+    }
 }
 
 impl Subdivide for UnitQuad {
@@ -39,7 +66,7 @@ impl Subdivide for UnitQuad {
 impl<T: BaseFloat> Partition<Vec2<T>> for UnitQuad
 {
     fn contains(&self, elem: &Vec2<T>) -> bool {
-        let width = cast::<_, T>(0.5).unwrap().powi(self.scale as i32);
+        let width: T = self.width();
         let offset = Vec2::new(
             width * cast(self.offset[0]).unwrap(),
             width * cast(self.offset[1]).unwrap(),
