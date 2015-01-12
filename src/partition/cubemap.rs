@@ -1,3 +1,5 @@
+//! Cubemapping module
+
 use std::num::cast;
 use nalgebra::{BaseFloat, Vec3, Vec2, zero};
 #[cfg(any(test, feature = "arbitrary"))]
@@ -6,8 +8,17 @@ use partition::{Partition, Subdivide};
 use partition::UnitQuad;
 
 /// An axis direction
+///
+/// This effectively distinguishes whether we are moving in positive or negative
+/// direction along some axis, i.e. +X vs -X, +Y vs. -Y etc.
 #[derive(Copy, Clone, Show)]
-pub enum Direction { Positive, Negative }
+pub enum Direction {
+    /// Positive direction
+    Positive,
+
+    /// Negative direction
+    Negative,
+}
 
 #[cfg(any(test, feature = "arbitrary"))]
 impl Arbitrary for Direction {
@@ -23,7 +34,16 @@ impl Arbitrary for Direction {
 
 /// A coordinate axis
 #[derive(Copy, Clone, Show)]
-pub enum Axis { X, Y, Z }
+pub enum Axis {
+    /// X-axis
+    X,
+
+    /// Y-axis
+    Y,
+
+    /// Z-axis
+    Z,
+}
 
 #[cfg(any(test, feature = "arbitrary"))]
 impl Arbitrary for Axis {
@@ -38,11 +58,17 @@ impl Arbitrary for Axis {
 }
 
 
+/// A quad-shaped partition of a side of a cubemap
 #[derive(Copy, Clone, Show)]
 pub struct Quad {
-    axis: Axis,
-    direction: Direction,
-    flat_quad: UnitQuad,
+    /// Normal axis of the quad normal
+    pub axis: Axis,
+
+    /// Direction of the quad normal along the axis
+    pub direction: Direction,
+
+    /// Embedded flat unit quad
+    pub flat_quad: UnitQuad,
 }
 
 impl Subdivide for Quad {
@@ -90,15 +116,23 @@ impl Arbitrary for Quad {
 }
 
 
+/// A cubemap partition of a 3-vector space
+///
+/// This has no radial partitioning, as it is intended mainly for the surface of
+/// a 2-sphere (which is a subset of the full ℝ³). It is either the full
+/// spherical dome or some subdivision stage on one of the six quad-shape sides
+/// obtained by projecting the sphere onto a cube.
 #[derive(Copy, Clone, Show)]
 pub enum CubeMap {
+    /// The full sphere
     Sphere,
+
+    /// A quad-based subdivision
     Quad(Quad),
 }
 
 impl Subdivide for CubeMap {
     fn subdivide(&self) -> Vec<CubeMap> {
-        println!("{:?}.subdivide()", *self);
         match *self {
             CubeMap::Sphere => 
                 vec![

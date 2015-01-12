@@ -142,4 +142,4 @@ mod interval;
 mod boxes;
 mod ncube;
 mod unitquad;
-mod cubemap;
+pub mod cubemap;
