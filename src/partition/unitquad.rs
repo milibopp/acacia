@@ -6,7 +6,7 @@ use partition::{Partition, Subdivide};
 
 
 /// A partition of the unit quad [0, 1) × [0, 1)
-#[derive(Copy, Clone, Show)]
+#[derive(Copy, Clone, Show, PartialEq, Hash, Eq)]
 pub struct UnitQuad {
     scale: u8,
     offset: [u32; 2],
