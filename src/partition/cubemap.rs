@@ -1,11 +1,11 @@
 //! Cubemapping module
 
-use std::num::cast;
-use nalgebra::{BaseFloat, Vec3, Vec2, zero};
+use nalgebra::{BaseFloat, Vec3, Vec2, Norm, zero, one};
 #[cfg(any(test, feature = "arbitrary"))]
 use quickcheck::{Arbitrary, Gen};
 use partition::{Partition, Subdivide};
 use partition::UnitQuad;
+
 
 /// An axis direction
 ///
@@ -58,7 +58,39 @@ impl Arbitrary for Axis {
 }
 
 
-/// A quad-shaped partition of a side of a cubemap
+/// Get the triple of axis vectors
+///
+/// The first vector is the normal vector n, the remaining are tangents t_1 and
+/// t_2. They form a basis that is right-handed, i.e. n × t_1 = t_2.
+pub fn axis_vector_triple<T: BaseFloat>(axis: Axis, direction: Direction) -> [Vec3<T>; 3] {
+    let _p: T = one();
+    let _n: T = -_p;
+    let _0: T = zero();
+    let sgn = match direction {
+        Direction::Positive => _p,
+        Direction::Negative => -_n,
+    };
+    match axis {
+        Axis::X => [
+            Vec3::new(sgn, _0, _0),
+            Vec3::new(_0, sgn, _0),
+            Vec3::new(_0, _0, _p),
+        ],
+        Axis::Y => [
+            Vec3::new(_0, sgn, _0),
+            Vec3::new(_0, _0, sgn),
+            Vec3::new(_p, _0, _0),
+        ],
+        Axis::Z => [
+            Vec3::new(_0, _0, sgn),
+            Vec3::new(sgn, _0, _0),
+            Vec3::new(_0, _p, _0),
+        ],
+    }
+}
+
+
+/// A quad-shaped partition of the side of a cubemap
 #[derive(Copy, Clone, Show, PartialEq, Hash, Eq)]
 pub struct Quad {
     /// Normal axis of the quad normal
@@ -69,6 +101,25 @@ pub struct Quad {
 
     /// Embedded flat unit quad
     pub flat_quad: UnitQuad,
+}
+
+impl Quad {
+    /// The center of this quad on the cube
+    pub fn center_on_cube<T: BaseFloat>(&self) -> Vec3<T> {
+        let _1: T = one();
+        let _2: T = _1 + _1;
+        let c: Vec2<T> = self.flat_quad.center();
+        let [n, t1, t2]: [Vec3<T>; 3] =
+            axis_vector_triple(self.axis, self.direction);
+        n + t1 * (c.x * _2 - _1) + t2 * (c.y * _2 - _1)
+    }
+
+    /// The center of this quad on the unit sphere
+    pub fn center_on_sphere<T: BaseFloat>(&self) -> Vec3<T> {
+        let mut c = self.center_on_cube();
+        c.normalize();
+        c
+    }
 }
 
 impl Subdivide for Quad {
@@ -86,8 +137,8 @@ impl Subdivide for Quad {
 
 impl<T: BaseFloat + PartialOrd> Partition<Vec3<T>> for Quad {
     fn contains(&self, elem: &Vec3<T>) -> bool {
-        let _1: T = cast(1.0).unwrap();
-        let _2: T = cast(2.0).unwrap();
+        let _1: T = one();
+        let _2: T = _1 + _1;
         let (i, j, k) = match self.axis {
             Axis::X => (0, 1, 2),
             Axis::Y => (1, 2, 0),
@@ -178,7 +229,7 @@ impl Arbitrary for CubeMap {
 
 #[cfg(test)]
 mod test {
-    pub use nalgebra::Vec3;
+    pub use nalgebra::{Vec3, Cross};
     pub use super::*;
     use quickcheck::quickcheck;
     use partition::Partition;
@@ -194,5 +245,14 @@ mod test {
             CubeMap::Sphere.contains(&v)
         }
         quickcheck(check as fn(Vec3<f64>) -> bool);
+    }
+
+    #[test]
+    fn axis_vector_triples_are_right_handed() {
+        fn check(axis: Axis, direction: Direction) -> bool {
+            let [n, t1, t2]: [Vec3<f64>; 3] = axis_vector_triple(axis, direction);
+            n.cross(&t1) == t2
+        }
+        quickcheck(check as fn(Axis, Direction) -> bool);
     }
 }
