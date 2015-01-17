@@ -2,7 +2,7 @@ language: rust
 
 env:
     global:
-        - secure: NXg6ReDiwcXU2qFp5ewZ+89XPR6jQ3rmKJBK2tAbzm8uTKCM5tfQxYjYVibKL494INJynpxfFDxdcjfYsaSK32f5iS+SWe2iH/Oggnr6Tv1Q3ugx7YY9X+S+m3NejspcrD3RpNEYcFzzkkZniAIWOwozNEP7yHkz1cSgrQiyvzo=
+        - secure: iIyvsi4dPz6kr0KN5eNu8OSTvWuCJ99FXaR9kDl4hxvI22e2wJPiYeqSlGkbdu5rBh+93HDf37FRplHI8s/Y/EREFxBWsQOBaj9HP/1YD7VyL0scF6My/p92n+f8hQ9IZIlblPN6q/sHZKwwnyMBBsncXtl4YlncEpa4MIv5gOA=
 
 script:
     - rustc --version
@@ -15,6 +15,4 @@ script:
     - (cd examples/gravity && cargo build -v)
 
 after_script:
-    - cargo doc
-    - cp -r target/doc doc
     - curl http://www.rust-ci.org/artifacts/put?t=$RUSTCI_TOKEN | sh
