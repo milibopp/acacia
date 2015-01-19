@@ -198,7 +198,7 @@ impl Subdivide for CubeMap {
                 .map(|(dir, ax)| CubeMap::Quad(Quad {
                     axis: ax,
                     direction: dir,
-                    flat_quad: UnitQuad::new(0, [0, 0]),
+                    flat_quad: UnitQuad::new(0, (0, 0)),
                 }))
                 .collect(),
             CubeMap::Quad(ref quad) =>
