@@ -14,11 +14,13 @@ license = "GPL-3.0+"
 debug = false
 
 [features]
-arbitrary = ["nalgebra/arbitrary"]
+arbitrary = ["nalgebra/arbitrary", "quickcheck"]
+
+[dependencies.quickcheck]
+optional = true
 
 [dev-dependencies]
 quickcheck = "*"
-quickcheck_macros = "*"
 
 [dependencies.nalgebra]
 git = "https://github.com/sebcrozet/nalgebra"

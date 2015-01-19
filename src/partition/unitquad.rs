@@ -9,17 +9,17 @@ use partition::{Partition, Subdivide};
 #[derive(Copy, Clone, Show, PartialEq, Hash, Eq)]
 pub struct UnitQuad {
     scale: u8,
-    offset: [u32; 2],
+    offset: (u32, u32),
 }
 
 impl UnitQuad {
     /// Create a new `UnitQuad`
     ///
     /// This asserts that the offset is valid given the scale level.
-    pub fn new(scale: u8, offset: [u32; 2]) -> UnitQuad {
+    pub fn new(scale: u8, offset: (u32, u32)) -> UnitQuad {
         assert!(scale < 32); // Otherwise exponentiation will overflow
         let max_offset = 2.pow(scale as usize);
-        assert!(offset.iter().all(|&x| x < max_offset));
+        assert!(offset.0 < max_offset && offset.1 < max_offset);
         UnitQuad { scale: scale, offset: offset }
     }
 
@@ -27,22 +27,22 @@ impl UnitQuad {
     pub fn scale(&self) -> u8 { self.scale }
 
     /// Integer offset
-    pub fn offset(&self) -> [u32; 2] { self.offset }
+    pub fn offset(&self) -> (u32, u32) { self.offset }
 
     /// Get coordinate within the partition from (u, v) coordinates
-    pub fn coordinate<T: BaseFloat>(&self, coord: [T; 2]) -> Vec2<T> {
-        let [u, v] = coord;
+    pub fn coordinate<T: BaseFloat>(&self, coord: (T, T)) -> Vec2<T> {
+        let (u, v) = coord;
         let width: T = self.width();
         Vec2::new(
-            width * (cast::<_, T>(self.offset[0]).unwrap() + u),
-            width * (cast::<_, T>(self.offset[1]).unwrap() + v),
+            width * (cast::<_, T>(self.offset.0).unwrap() + u),
+            width * (cast::<_, T>(self.offset.1).unwrap() + v),
         )
     }
 
     /// Center of the partitioned region
     pub fn center<T: BaseFloat>(&self) -> Vec2<T> {
         let half = cast(0.5).unwrap();
-        self.coordinate([half, half])
+        self.coordinate((half, half))
     }
 
     /// Width of the partitioned region
@@ -56,8 +56,8 @@ impl Subdivide for UnitQuad {
         [(0, 0), (0, 1), (1, 0), (1, 1)]
             .iter()
             .map(|&(di, dj)| {
-                let [i, j] = self.offset;
-                UnitQuad::new(self.scale + 1, [i * 2 + di, j * 2 + dj])
+                let (i, j) = self.offset;
+                UnitQuad::new(self.scale + 1, (i * 2 + di, j * 2 + dj))
             })
             .collect()
     }
@@ -68,8 +68,8 @@ impl<T: BaseFloat> Partition<Vec2<T>> for UnitQuad
     fn contains(&self, elem: &Vec2<T>) -> bool {
         let width: T = self.width();
         let offset = Vec2::new(
-            width * cast(self.offset[0]).unwrap(),
-            width * cast(self.offset[1]).unwrap(),
+            width * cast(self.offset.0).unwrap(),
+            width * cast(self.offset.1).unwrap(),
         );
         (offset.x < elem.x) && (elem.x < offset.x + width) &&
         (offset.y < elem.y) && (elem.y < offset.y + width)
@@ -92,10 +92,10 @@ impl Arbitrary for UnitQuad {
             g.gen_range(0, max_scale)
         };
         let max_offset = 2.pow(scale as usize);
-        UnitQuad::new(scale, [
+        UnitQuad::new(scale, (
             g.gen_range(0, max_offset),
             g.gen_range(0, max_offset),
-        ])
+        ))
     }
 }
 
@@ -116,7 +116,7 @@ mod test {
             if v.x < 0.0 || v.x >= 1.0 || v.y < 0.0 || v.y >= 1.0 {
                 TestResult::discard()
             } else {
-                TestResult::from_bool(UnitQuad::new(0, [0, 0]).contains(&v))
+                TestResult::from_bool(UnitQuad::new(0, (0, 0)).contains(&v))
             }
         }
         quickcheck(check as fn(Vec2<f64>) -> TestResult);
