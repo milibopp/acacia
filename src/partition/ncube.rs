@@ -42,7 +42,7 @@ impl<P, S> Subdivide for Ncube<P, S>
         let dim = Dim::dim(None::<P>);
         let new_width = self.width / _2;
         (0..2.pow(dim))
-            .map(|n| {
+            .map(|n: i32| {
                 let mut new_center = self.center;
                 let dx = new_width / _2;
                 for i in (0..dim) {
