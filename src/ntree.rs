@@ -265,9 +265,9 @@ mod test {
 
     #[test]
     fn tree_branch_on_second_insert() {
-        let mut n = Tree::empty(Ncube::new(Pnt2::new(0.0f64, 0.0), 10.0f64), ());
-        n.insert(Positioned { object: 1i8, position: Pnt2::new(1.0f64, -2.0) }, ());
-        n.insert(Positioned { object: 2i8, position: Pnt2::new(2.0, 1.0) }, ());
+        let mut n = Tree::empty(Ncube::new(Pnt2::new(0.0, 0.0), 10.0), ());
+        n.insert(Positioned { object: 1i32, position: Pnt2::new(1.0, -2.0) }, ());
+        n.insert(Positioned { object: 2, position: Pnt2::new(2.0, 1.0) }, ());
         match n.state {
             NodeState::Branch(nodes) => {
                 for k in 1..3 {
