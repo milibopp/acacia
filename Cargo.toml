@@ -1,6 +1,6 @@
 [package]
 name = "acacia"
-version = "0.0.1"
+version = "0.0.2"
 authors = ["Eduard Bopp <eduard.bopp@aepsil0n.de>"]
 description = "A spatial partitioning and tree library."
 documentation = "http://www.rust-ci.org/aepsil0n/acacia/doc/acacia/"
@@ -16,18 +16,15 @@ debug = false
 [features]
 arbitrary = ["nalgebra/arbitrary", "quickcheck"]
 
+[dependencies]
+nalgebra = "*"
+itertools = "*"
+
 [dependencies.quickcheck]
 optional = true
 
 [dev-dependencies]
 quickcheck = "*"
 
-[dependencies.nalgebra]
-git = "https://github.com/sebcrozet/nalgebra"
-
-[dependencies.itertools]
-git = "https://github.com/bluss/rust-itertools"
-
 [dev-dependencies.nalgebra]
-git = "https://github.com/sebcrozet/nalgebra"
 features = ["arbitrary"]
