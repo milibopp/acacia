@@ -12,8 +12,6 @@ script:
     - cargo test --verbose
     - cargo bench --verbose
     - cargo doc --verbose
-    # Build the examples
-    - (cd examples/gravity && cargo build -v)
 
 after_script:
     - curl http://www.rust-ci.org/artifacts/put?t=$RUSTCI_TOKEN | sh
