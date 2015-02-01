@@ -1,4 +1,4 @@
-#![allow(unstable)]
+#![feature(rand)]
 
 extern crate nalgebra;
 extern crate acacia;
