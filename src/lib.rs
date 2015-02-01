@@ -1,7 +1,7 @@
 //! A spatial tree library
 
 #![warn(missing_docs)]
-#![allow(unstable)] // FIXME: remove this towards Rust 1.0
+#![feature(core, hash)]
 
 extern crate nalgebra;
 #[macro_use]
