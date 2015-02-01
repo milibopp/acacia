@@ -11,7 +11,7 @@ use partition::{Partition, Subdivide};
 
 
 /// An N-cube based partitioning scheme
-#[derive(Copy, Clone, Show)]
+#[derive(Copy, Clone, Debug)]
 pub struct Ncube<P, S> {
     center: P,
     width: S,

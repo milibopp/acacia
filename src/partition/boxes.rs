@@ -52,7 +52,7 @@ macro_rules! impl_arb_for_box {
 
 
 /// A 2d box of intervals
-#[derive(Copy, Clone, Show)]
+#[derive(Copy, Clone, Debug)]
 pub struct Box2<T> {
     x: Interval<T>,
     y: Interval<T>,
@@ -64,7 +64,7 @@ impl_arb_for_box!(Box2, x, y);
 
 
 /// A 3d box of intervals
-#[derive(Copy, Clone, Show)]
+#[derive(Copy, Clone, Debug)]
 pub struct Box3<T> {
     x: Interval<T>,
     y: Interval<T>,
