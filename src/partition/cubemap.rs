@@ -11,7 +11,7 @@ use partition::UnitQuad;
 ///
 /// This effectively distinguishes whether we are moving in positive or negative
 /// direction along some axis, i.e. +X vs -X, +Y vs. -Y etc.
-#[derive(Copy, Clone, Show, PartialEq, Hash, Eq)]
+#[derive(Copy, Clone, Debug, PartialEq, Hash, Eq)]
 pub enum Direction {
     /// Positive direction
     Positive,
@@ -33,7 +33,7 @@ impl Arbitrary for Direction {
 
 
 /// A coordinate axis
-#[derive(Copy, Clone, Show, PartialEq, Hash, Eq)]
+#[derive(Copy, Clone, Debug, PartialEq, Hash, Eq)]
 pub enum Axis {
     /// X-axis
     X,
@@ -91,7 +91,7 @@ pub fn axis_vector_triple<T: BaseFloat>(axis: Axis, direction: Direction) -> [Ve
 
 
 /// A quad-shaped partition of the side of a cubemap
-#[derive(Copy, Clone, Show, PartialEq, Hash, Eq)]
+#[derive(Copy, Clone, Debug, PartialEq, Hash, Eq)]
 pub struct Quad {
     /// Normal axis of the quad normal
     pub axis: Axis,
@@ -173,7 +173,7 @@ impl Arbitrary for Quad {
 /// a 2-sphere (which is a subset of the full ℝ³). It is either the full
 /// spherical dome or some subdivision stage on one of the six quad-shape sides
 /// obtained by projecting the sphere onto a cube.
-#[derive(Copy, Clone, Show, PartialEq, Hash, Eq)]
+#[derive(Copy, Clone, Debug, PartialEq, Hash, Eq)]
 pub enum CubeMap {
     /// The full sphere
     Sphere,

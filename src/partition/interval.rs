@@ -6,7 +6,7 @@ use partition::{Partition, Subdivide, Mid};
 
 
 /// A half-open interval [a, b) between two points a and b
-#[derive(Copy, Clone, Show)]
+#[derive(Copy, Clone, Debug)]
 pub struct Interval<T> {
     start: T,
     end: T,
