@@ -1,6 +1,6 @@
 //! Simple integration tests oriented towards gravity computations
 
-#![allow(unstable)] // FIXME: remove this towards Rust 1.0
+#![feature(core)]
 
 extern crate acacia;
 extern crate nalgebra;
@@ -23,8 +23,8 @@ fn tree_center_of_mass() {
             return TestResult::discard();
         }
         // No two points should be in the same place
-        for i in range(0, data.len()) {
-            for j in range(0, i) {
+        for i in 0..data.len() {
+            for j in 0..i {
                 let (_, pi) = data[i];
                 let (_, pj) = data[j];
                 if pi == pj {
@@ -74,8 +74,8 @@ fn tree_gravity_approx() {
             return TestResult::discard();
         }
         // No two stars should be in the same place
-        for i in range(0, starfield.len()) {
-            for j in range(0, i) {
+        for i in 0..starfield.len() {
+            for j in 0..i {
                 let (_, pi) = starfield[i];
                 let (_, pj) = starfield[j];
                 if pi == pj {
