@@ -68,7 +68,7 @@ pub fn axis_vector_triple<T: BaseFloat>(axis: Axis, direction: Direction) -> [Ve
     let _0: T = zero();
     let sgn = match direction {
         Direction::Positive => _p,
-        Direction::Negative => -_n,
+        Direction::Negative => _n,
     };
     match axis {
         Axis::X => [
@@ -254,5 +254,17 @@ mod test {
             n.cross(&t1) == t2
         }
         quickcheck(check as fn(Axis, Direction) -> bool);
+    }
+
+    #[test]
+    fn axis_vector_triples_concrete() {
+        assert_eq!(
+            axis_vector_triple::<f64>(Axis::X, Direction::Negative),
+            [-Vec3::x(), -Vec3::y(), Vec3::z()]
+        );
+        assert_eq!(
+            axis_vector_triple::<f64>(Axis::X, Direction::Positive),
+            [Vec3::x(), Vec3::y(), Vec3::z()]
+        );
     }
 }
