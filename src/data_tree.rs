@@ -95,17 +95,22 @@ impl<P, O, D> Tree<P,  O, D>
 }
 
 
-impl<P, O, D> Node for Tree<P, O, D> {
+impl<P: Clone, O, D> Node for Tree<P, O, D> {
     type Partition = P;
     type Object = O;
     type Container = Vec<Tree<P, O, D>>;
 
-    fn state(&self) -> &NodeState<O, Vec<Tree<P, O, D>>> {
-        &self.state
+    fn state(&self) -> NodeState<&O, &Vec<Tree<P, O, D>>> {
+        use traits::NodeState::*;
+        match self.state {
+            Empty => Empty,
+            Leaf(ref obj) => Leaf(obj),
+            Branch(ref vec) => Branch(vec),
+        }
     }
 
-    fn partition(&self) -> &P {
-        &self.partition
+    fn partition(&self) -> P {
+        self.partition.clone()
     }
 }
 
@@ -132,7 +137,7 @@ impl<P, O, D> DataQuery for Tree<P, O, D> {
     }
 }
 
-impl<P, O, D> ObjectQuery for Tree<P, O, D> {
+impl<P: Clone, O, D> ObjectQuery for Tree<P, O, D> {
     fn query_objects<R, F>(&self, recurse: &R, f: &mut F)
         where R: Fn(&Tree<P, O, D>) -> bool,
               F: FnMut(&O),
