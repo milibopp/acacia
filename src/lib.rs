@@ -13,6 +13,12 @@ extern crate quickcheck;
 #[cfg(test)]
 extern crate test;
 
-pub mod ntree;
-pub mod tree;
+pub use traits::*;
+pub use pure_tree::PureTree;
+pub use data_tree::Tree;
+
 pub mod partition;
+
+mod pure_tree;
+mod data_tree;
+mod traits;

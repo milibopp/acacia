@@ -10,8 +10,7 @@ use std::num::Float;
 use std::cmp::partial_max;
 use nalgebra::{ApproxEq, Pnt2, Pnt3, FloatPnt, Vec2, Vec3, zero, Norm, Orig};
 use quickcheck::{TestResult, quickcheck};
-use acacia::tree::{Node, AssociatedData, DataQuery, Positioned};
-use acacia::ntree::Tree;
+use acacia::{Tree, Node, AssociatedData, DataQuery, Positioned};
 use acacia::partition::Ncube;
 
 

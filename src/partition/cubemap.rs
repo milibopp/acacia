@@ -3,8 +3,7 @@
 use nalgebra::{BaseFloat, Vec3, Vec2, Norm, zero, one};
 #[cfg(any(test, feature = "arbitrary"))]
 use quickcheck::{Arbitrary, Gen};
-use partition::{Partition, Subdivide};
-use partition::UnitQuad;
+use partition::{Partition, Subdivide, UnitQuad};
 
 
 /// An axis direction
