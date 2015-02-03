@@ -30,7 +30,6 @@ impl<P, O> PureTree<P, O>
     /// Construct a tree without checking the geometry of the input data
     pub fn new<I: Iterator<Item=O>>(iter: I, partition: P) -> PureTree<P, O> {
         let mut tree = PureTree::empty(partition);
-        let mut iter = iter;
         for object in iter {
             tree.insert(object)
         }
@@ -176,7 +175,6 @@ impl<P, O, D> Tree<P,  O, D>
               S: Fn(&O) -> D,
               C: Fn(&D, &D) -> D,
     {
-        let mut objects = objects;
         let mut tree = Tree::empty(partition, default.clone());
         for object in objects {
             tree.insert(object, default.clone());
