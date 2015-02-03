@@ -40,10 +40,10 @@ pub trait Node {
     type Container;
 
     /// The state of the node
-    fn state(&self) -> &NodeState<Self::Object, Self::Container>;
+    fn state(&self) -> NodeState<&Self::Object, &Self::Container>;
 
     /// The partitioning scheme
-    fn partition(&self) -> &Self::Partition;
+    fn partition(&self) -> Self::Partition;
 }
 
 
@@ -146,8 +146,8 @@ impl<'a, O> Position for &'a O
 
 /// A positioned object
 ///
-/// This is the most simple generic implementation of Positionable and serves as
-/// a wrapper for types that do not have a notion of a position themselves. It
+/// This is the most simple generic implementation of Position and serves as a
+/// wrapper for types that do not have a notion of a position themselves. It
 /// equips these with an additional generic position as an attribute.
 #[derive(Clone)]
 pub struct Positioned<O, P> {

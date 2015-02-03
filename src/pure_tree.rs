@@ -62,7 +62,7 @@ impl<P, O> PureTree<P, O>
     }
 }
 
-impl<P, O> ObjectQuery for PureTree<P, O> {
+impl<P: Clone, O> ObjectQuery for PureTree<P, O> {
     fn query_objects<R, F>(&self, recurse: &R, f: &mut F)
         where R: Fn(&PureTree<P, O>) -> bool,
               F: FnMut(&O),
@@ -80,17 +80,22 @@ impl<P, O> ObjectQuery for PureTree<P, O> {
     }
 }
 
-impl<P, O> Node for PureTree<P, O> {
+impl<P: Clone, O> Node for PureTree<P, O> {
     type Partition = P;
     type Object = O;
     type Container = Vec<PureTree<P, O>>;
 
-    fn state(&self) -> &NodeState<O, Vec<PureTree<P, O>>> {
-        &self.state
+    fn state(&self) -> NodeState<&O, &Vec<PureTree<P, O>>> {
+        use traits::NodeState::*;
+        match self.state {
+            Empty => Empty,
+            Leaf(ref obj) => Leaf(obj),
+            Branch(ref vec) => Branch(vec),
+        }
     }
 
-    fn partition(&self) -> &P {
-        &self.partition
+    fn partition(&self) -> P {
+        self.partition.clone()
     }
 }
 
