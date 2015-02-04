@@ -18,7 +18,7 @@ pub use pure_tree::PureTree;
 pub use data_tree::Tree;
 
 pub mod partition;
-
-mod pure_tree;
-mod data_tree;
-mod traits;
+pub mod pure_tree;
+pub mod data_tree;
+pub mod traits;
+pub mod iter;
