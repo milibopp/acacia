@@ -1,8 +1,10 @@
 //! Implementation of tree with associated data.
 
 use std::mem;
+use std::iter::IntoIterator;
 use traits::{NodeState, DataQuery, ObjectQuery, AssociatedData, Node, Position};
 use partition::Partition;
+use iter::Iter;
 
 
 /// An N-dimensional tree
@@ -151,6 +153,11 @@ impl<P: Clone, O, D> ObjectQuery for Tree<P, O, D> {
             _ => (),
         }
     }
+}
+
+impl<'a, P: Clone + 'a, O: 'a, D: 'a> IntoIterator for &'a Tree<P, O, D> {
+    type Iter = Iter<'a, Tree<P, O, D>>;
+    fn into_iter(self) -> Iter<'a, Tree<P, O, D>> { Iter::new(self) }
 }
 
 

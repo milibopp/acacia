@@ -1,8 +1,10 @@
 //! Pure tree implementation.
 
 use std::mem;
+use std::iter::IntoIterator;
 use traits::{NodeState, ObjectQuery, Node, Position};
 use partition::Partition;
+use iter::Iter;
 
 
 /// A pure N-dimensional tree
@@ -97,6 +99,11 @@ impl<P: Clone, O> Node for PureTree<P, O> {
     fn partition(&self) -> P {
         self.partition.clone()
     }
+}
+
+impl<'a, P: Clone + 'a, O: 'a> IntoIterator for &'a PureTree<P, O> {
+    type Iter = Iter<'a, PureTree<P, O>>;
+    fn into_iter(self) -> Iter<'a, PureTree<P, O>> { Iter::new(self) }
 }
 
 
