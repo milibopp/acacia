@@ -2,7 +2,7 @@
 
 use std::mem;
 use std::iter::IntoIterator;
-use traits::{NodeState, ObjectQuery, Node, Position};
+use traits::{NodeState, Node, Position};
 use partition::Partition;
 use iter::Iter;
 
@@ -61,24 +61,6 @@ impl<P, O> PureTree<P, O>
                 NodeState::Branch(nodes)
             }
         };
-    }
-}
-
-impl<P: Clone, O> ObjectQuery for PureTree<P, O> {
-    fn query_objects<R, F>(&self, recurse: &R, f: &mut F)
-        where R: Fn(&PureTree<P, O>) -> bool,
-              F: FnMut(&O),
-    {
-        match self.state {
-            NodeState::Branch(ref nodes) => 
-                if recurse(self) {
-                    for node in nodes.iter() {
-                        node.query_objects(recurse, f)
-                    }
-                },
-            NodeState::Leaf(ref obj) => f(obj),
-            _ => (),
-        }
     }
 }
 
@@ -156,14 +138,15 @@ mod test {
         b.iter(|| {
             // Count the number of objects within the search radius 10000 times
             (0..10000)
-                .map(|_| {
-                    let mut i: i32 = 0;
-                    tree.query_objects(
-                        &|node| node.partition().center().dist(&Orig::orig()) < search_radius + node.partition().width() / 2.0,
-                        &mut |other| if other.position.dist(&Orig::orig()) < search_radius {i += 1},
-                    );
-                    i
-                })
+                .map(|_|
+                    tree.query_objects(|node|
+                        node.partition()
+                        .center().dist(&Orig::orig())
+                        < search_radius + node.partition().width() / 2.0,
+                    )
+                    .filter(|other| other.position.dist(&Orig::orig()) < search_radius)
+                    .count()
+                )
                 .sum()
         })
     }
