@@ -2,7 +2,7 @@
 
 use std::mem;
 use std::iter::IntoIterator;
-use traits::{NodeState, DataQuery, AssociatedData, Node, Position};
+use traits::{NodeState, AssociatedData, Node, Position};
 use partition::Partition;
 use iter::Iter;
 
@@ -121,21 +121,6 @@ impl<P, O, D> AssociatedData for Tree<P, O, D> {
 
     fn data(&self) -> &D {
         &self.data
-    }
-}
-
-impl<P, O, D> DataQuery for Tree<P, O, D> {
-    fn query_data<R, F>(&self, recurse: &R, f: &mut F)
-        where R: Fn(&Tree<P, O, D>) -> bool,
-              F: FnMut(&D),
-    {
-        match self.state {
-            NodeState::Branch(ref nodes) if recurse(self) =>
-                for node in nodes.iter() {
-                    node.query_data(recurse, f)
-                },
-            _ => f(&self.data),
-        }
     }
 }
 
