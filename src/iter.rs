@@ -1,6 +1,6 @@
 //! Generic tree iterators.
 
-use traits::Node;
+use traits::{Node, AssociatedData};
 
 
 /// An iterator over the objects in a tree.
@@ -42,19 +42,19 @@ impl<'a, T> Iterator for Iter<'a, T>
 
 /// An iterator over the objects in a tree, that only recurses as deep as
 /// specified by some predicate.
-pub struct Recurse<'a, T: 'a, R> {
+pub struct RecurseObjects<'a, T: 'a, R> {
     nodes: Vec<(usize, &'a T)>,
     recurse: R,
 }
 
-impl<'a, T, R> Recurse<'a, T, R> {
+impl<'a, T, R> RecurseObjects<'a, T, R> {
     /// Create a new iterator.
-    pub fn new(tree: &'a T, recurse: R) -> Recurse<'a, T, R> {
-        Recurse { nodes: vec![(0, tree)], recurse: recurse }
+    pub fn new(tree: &'a T, recurse: R) -> RecurseObjects<'a, T, R> {
+        RecurseObjects { nodes: vec![(0, tree)], recurse: recurse }
     }
 }
 
-impl<'a, T, R> Iterator for Recurse<'a, T, R>
+impl<'a, T, R> Iterator for RecurseObjects<'a, T, R>
     where T: Node<Container = Vec<T>>,
           R: FnMut(&T) -> bool,
 {
@@ -68,14 +68,62 @@ impl<'a, T, R> Iterator for Recurse<'a, T, R>
                 (_, Empty) => self.next(),
                 (_, Leaf(obj)) => Some(obj),
                 (n, Branch(vec)) => {
-                    if (self.recurse)(node) {
-                        if let Some(child) = vec[].get(n) {
+                    if let Some(child) = vec[].get(n) {
+                        if (self.recurse)(node) {
                             self.nodes.push((n + 1, node));
                             self.nodes.push((0, child));
                         }
                     }
                     self.next()
                 },
+            }
+        }
+    }
+}
+
+
+/// An iterator over the objects in a tree, that only recurses as deep as
+/// specified by some predicate.
+pub struct RecurseData<'a, T: 'a, R> {
+    nodes: Vec<(Option<usize>, &'a T)>,
+    recurse: R,
+}
+
+impl<'a, T, R> RecurseData<'a, T, R> {
+    /// Create a new iterator.
+    pub fn new(tree: &'a T, recurse: R) -> RecurseData<'a, T, R> {
+        RecurseData { nodes: vec![(None, tree)], recurse: recurse }
+    }
+}
+
+impl<'a, T, R> Iterator for RecurseData<'a, T, R>
+    where T: Node<Container = Vec<T>> + AssociatedData,
+          <T as Node>::Object: 'a,
+          R: FnMut(&T) -> bool,
+{
+    type Item = &'a <T as AssociatedData>::Data;
+
+    fn next(&mut self) -> Option<&'a <T as AssociatedData>::Data> {
+        use traits::NodeState::*;
+        match self.nodes.pop() {
+            None => None,
+            Some((count, node)) => match (count, node.state()) {
+                (None, Branch(_)) => {
+                    if (self.recurse)(node) {
+                        self.nodes.push((Some(0), node));
+                        self.next()
+                    } else {
+                        Some(node.data())
+                    }
+                }
+                (Some(n), Branch(vec)) => {
+                    if let Some(child) = vec[].get(n) {
+                        self.nodes.push((Some(n + 1), node));
+                        self.nodes.push((None, child));
+                    }
+                    self.next()
+                },
+                _ => Some(node.data()),
             }
         }
     }
@@ -106,7 +154,7 @@ mod test {
     }
 
     #[test]
-    fn recurse_pure_tree() {
+    fn recurse_objects_pure_tree() {
         let tree = PureTree::new(
             vec![
                 Positioned { object: 1i32, position: Pnt2::new(-0.1, 0.8) },
@@ -116,7 +164,7 @@ mod test {
             Ncube::new(Orig::orig(), 2.0)
         );
         let all: Vec<_> =
-            Recurse::new(
+            RecurseObjects::new(
                 &tree,
                 |n: &PureTree<Ncube<_, f64>, _>|
                     n.partition().width() > 1.5

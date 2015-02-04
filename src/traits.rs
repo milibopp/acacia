@@ -1,6 +1,6 @@
 //! Common abstractions for all trees
 
-use iter::Recurse;
+use iter::{RecurseObjects, RecurseData};
 
 
 /// The state of a node
@@ -60,40 +60,34 @@ pub trait AssociatedData {
 }
 
 
-/// A tree that allows recursive queries on its objects
+/// A tree that allows recursive queries on its objects. A closure is used to
+/// determine the recursion behavior.
 ///
-/// Closures are used to determine the recursion behavior and what is to be
-/// computed.
-///
-/// # Type parameters
-///
-/// - `O` is the type of the objects stored in the tree.
+/// This is an extension trait of `Node`.
 pub trait ObjectQuery: Node {
-    /// Compute a query on the objects using an accumulator
+    /// Iterate over objects through all nodes.
     ///
-    /// This method walks recursively through the tree, as deep as `recurse`
-    /// prescribes, and calls a function on each object encountered.
+    /// This method yields an iterator that walks recursively through the tree,
+    /// as deep as `recurse` prescribes.
     ///
-    /// Empty nodes and branch nodes with `!recurse(&node)` are ignored, whereas
-    /// the callback is called on every object in a leaf node.
+    /// Empty nodes and branch nodes with `!recurse(&node)` are omitted, whereas
+    /// the iterator considers every object in a leaf node.
     ///
     /// # Parameters
     ///
     /// - At each branching node the tree is only recursed further, iff
     ///   `recurse(&node)`.
-    /// - `f` is the callback function. This may mutably borrow its environment,
-    ///   which is currently the only way to obtain a result from this function.
-    fn query_objects<'a, R>(&'a self, recurse: R) -> Recurse<'a, Self, R>
+    fn query_objects<'a, R>(&'a self, recurse: R) -> RecurseObjects<'a, Self, R>
         where R: Fn(&Self) -> bool;
 }
 
 impl<T> ObjectQuery for T
     where T: Node<Container = Vec<T>>,
 {
-    fn query_objects<'a, R>(&'a self, recurse: R) -> Recurse<'a, Self, R>
+    fn query_objects<'a, R>(&'a self, recurse: R) -> RecurseObjects<'a, Self, R>
         where R: Fn(&T) -> bool
     {
-        Recurse::new(self, recurse)
+        RecurseObjects::new(self, recurse)
     }
 }
 
@@ -127,9 +121,18 @@ pub trait DataQuery: AssociatedData {
     /// - `f` is called on the associated data of every node reached by the
     ///   recursion. This may mutably borrow its environment, which is currently
     ///   the only way to obtain a result from this function.
-    fn query_data<R, F>(&self, recurse: &R, f: &mut F)
-        where R: Fn(&Self) -> bool,
-              F: FnMut(&<Self as AssociatedData>::Data);
+    fn query_data<'a, R>(&'a self, recurse: R) -> RecurseData<'a, Self, R>
+        where R: Fn(&Self) -> bool;
+}
+
+impl<T> DataQuery for T
+    where T: Node<Container=Vec<T>> + AssociatedData,
+{
+    fn query_data<'a, R>(&'a self, recurse: R) -> RecurseData<'a, T, R>
+        where R: Fn(&Self) -> bool
+    {
+        RecurseData::new(self, recurse)
+    }
 }
 
 

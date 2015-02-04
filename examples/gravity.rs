@@ -79,29 +79,25 @@ fn main() {
     // acceleration.
     let test_point = Pnt3::new(2.3, -4.1, 1.6);
 
-    let mut tree_gravity: Vec3<f64> = zero();
-    tree.query_data(
-
+    let theta = 0.5; // A bit arbitrary but this appears to work
+    let tree_gravity: Vec3<f64> =
         // This is the recursion criterion. If a branch node passes this, the
         // query continues on its children.
-        &|node| {
+        tree.query_data(|node| {
             let &(ref center_of_mass, _) = node.data();
-            let d = test_point.dist(center_of_mass);
-            let delta: f64 = node.partition().center().dist(center_of_mass);
-            d < 2.0 * node.partition().width() + delta
-        },
-
+            let d = FloatPnt::dist(&test_point, center_of_mass);
+            let delta = FloatPnt::dist(&node.partition().center(), center_of_mass);
+            d < node.partition().width() / theta + delta
+        })
         // This collects our force term from each piece of associated data the
         // tree encounters during recursion.
-        &mut |&(center_of_mass, mass)| {
-            tree_gravity = tree_gravity + newton(mass, center_of_mass, test_point);
-        },
-    );
+        .map(|&(center_of_mass, mass)| newton(mass, center_of_mass, test_point))
+        .fold(zero(), |a, b| a + b);
 
     // Calculate gravity exactly for comparison
-    let exact_gravity = particles.iter()
+    let exact_gravity: Vec3<f64> = particles.iter()
         .map(|particle| newton(particle.mass, particle.position, test_point))
-        .fold(zero(), |a: Vec3<f64>, b| a + b);
+        .fold(zero(), |a, b| a + b);
 
     // Print result of calculation
     println!("Tree-computed gravity at {:?} is {:?} (exact: {:?})",
