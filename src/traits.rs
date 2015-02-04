@@ -1,5 +1,7 @@
 //! Common abstractions for all trees
 
+use iter::Recurse;
+
 
 /// The state of a node
 ///
@@ -67,7 +69,6 @@ pub trait AssociatedData {
 ///
 /// - `O` is the type of the objects stored in the tree.
 pub trait ObjectQuery: Node {
-
     /// Compute a query on the objects using an accumulator
     ///
     /// This method walks recursively through the tree, as deep as `recurse`
@@ -82,9 +83,18 @@ pub trait ObjectQuery: Node {
     ///   `recurse(&node)`.
     /// - `f` is the callback function. This may mutably borrow its environment,
     ///   which is currently the only way to obtain a result from this function.
-    fn query_objects<R, F>(&self, recurse: &R, f: &mut F)
-        where R: Fn(&Self) -> bool,
-              F: FnMut(&<Self as Node>::Object);
+    fn query_objects<'a, R>(&'a self, recurse: R) -> Recurse<'a, Self, R>
+        where R: Fn(&Self) -> bool;
+}
+
+impl<T> ObjectQuery for T
+    where T: Node<Container = Vec<T>>,
+{
+    fn query_objects<'a, R>(&'a self, recurse: R) -> Recurse<'a, Self, R>
+        where R: Fn(&T) -> bool
+    {
+        Recurse::new(self, recurse)
+    }
 }
 
 
