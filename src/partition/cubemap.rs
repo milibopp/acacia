@@ -115,9 +115,7 @@ impl Quad {
 
     /// The center of this quad on the unit sphere
     pub fn center_on_sphere<T: BaseFloat>(&self) -> Vec3<T> {
-        let mut c = self.center_on_cube();
-        c.normalize();
-        c
+        self.center_on_cube().normalize()
     }
 }
 

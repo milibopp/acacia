@@ -7,6 +7,7 @@
 extern crate nalgebra;
 #[macro_use]
 extern crate itertools;
+extern crate rand;
 
 #[cfg(any(test, feature = "arbitrary"))]
 extern crate quickcheck;

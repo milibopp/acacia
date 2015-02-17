@@ -125,15 +125,15 @@ impl<P, O, D> AssociatedData for Tree<P, O, D> {
 }
 
 impl<'a, P: Clone + 'a, O: 'a, D: 'a> IntoIterator for &'a Tree<P, O, D> {
-    type Iter = Iter<'a, Tree<P, O, D>>;
+    type IntoIter = Iter<'a, Tree<P, O, D>>;
     fn into_iter(self) -> Iter<'a, Tree<P, O, D>> { Iter::new(self) }
 }
 
 
 #[cfg(test)]
 mod test {
-    use std::rand::distributions::{IndependentSample, Range};
-    use std::rand::thread_rng;
+    use rand::distributions::{IndependentSample, Range};
+    use rand::thread_rng;
     use test::Bencher;
     use nalgebra::{Pnt2, Vec2, Orig};
     use quickcheck::quickcheck;
