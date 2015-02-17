@@ -84,16 +84,16 @@ impl<P: Clone, O> Node for PureTree<P, O> {
 }
 
 impl<'a, P: Clone + 'a, O: 'a> IntoIterator for &'a PureTree<P, O> {
-    type Iter = Iter<'a, PureTree<P, O>>;
+    type IntoIter = Iter<'a, PureTree<P, O>>;
     fn into_iter(self) -> Iter<'a, PureTree<P, O>> { Iter::new(self) }
 }
 
 
 #[cfg(test)]
 mod test {
-    use std::rand::distributions::{IndependentSample, Range};
-    use std::rand::thread_rng;
     use std::iter::AdditiveIterator;
+    use rand::distributions::{IndependentSample, Range};
+    use rand::thread_rng;
     use test::Bencher;
     use nalgebra::{Pnt2, FloatPnt, Orig};
 

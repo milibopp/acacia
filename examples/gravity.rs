@@ -1,10 +1,9 @@
-#![feature(rand)]
-
+extern crate rand;
 extern crate nalgebra;
 extern crate acacia;
 
-use std::rand::thread_rng;
-use std::rand::distributions::{Range, IndependentSample};
+use rand::thread_rng;
+use rand::distributions::{Range, IndependentSample};
 use std::num::Float;
 use nalgebra::{Pnt3, Vec3, FloatPnt, Norm, Orig, zero};
 use acacia::{Tree, DataQuery, Node, AssociatedData, Position};
