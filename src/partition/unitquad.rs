@@ -84,7 +84,7 @@ impl Arbitrary for UnitQuad {
         // the `.gen_range` calls, even though `Rng: Gen`. The compiler
         // complains that the "source trait is private". Curiously, adding this
         // import here fixes the same situation in the `cubemap` module as well.
-        use std::rand::Rng;
+        use rand::Rng;
         let scale: u8 = {
             // scale >= 32 is invalid (overflow)
             // At scale >= 31 subdivision fails

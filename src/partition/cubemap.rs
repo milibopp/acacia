@@ -3,8 +3,7 @@
 use nalgebra::{BaseFloat, Vec3, Vec2, Norm, zero, one};
 #[cfg(any(test, feature = "arbitrary"))]
 use quickcheck::{Arbitrary, Gen};
-use partition::{Partition, Subdivide};
-use partition::UnitQuad;
+use partition::{Partition, Subdivide, UnitQuad};
 
 
 /// An axis direction
@@ -116,9 +115,7 @@ impl Quad {
 
     /// The center of this quad on the unit sphere
     pub fn center_on_sphere<T: BaseFloat>(&self) -> Vec3<T> {
-        let mut c = self.center_on_cube();
-        c.normalize();
-        c
+        self.center_on_cube().normalize()
     }
 }
 
