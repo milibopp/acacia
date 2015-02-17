@@ -25,12 +25,14 @@ impl<P, S: PartialOrd + Zero> Ncube<P, S> {
     }
 }
 
-impl<P: Copy, S: Copy> Ncube<P, S> {
+impl<P, S: Clone> Ncube<P, S> {
     /// The width of the N-cube
-    pub fn width(&self) -> S { self.width }
+    pub fn width(&self) -> S { self.width.clone() }
+}
 
+impl<P: Clone, S> Ncube<P, S> {
     /// The center of the N-cube
-    pub fn center(&self) -> P { self.center }
+    pub fn center(&self) -> P { self.center.clone() }
 }
 
 impl<P, S> Subdivide for Ncube<P, S>

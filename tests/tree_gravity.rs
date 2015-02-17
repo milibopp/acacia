@@ -10,8 +10,7 @@ use std::num::Float;
 use std::cmp::partial_max;
 use nalgebra::{ApproxEq, Pnt2, Pnt3, FloatPnt, Vec2, Vec3, zero, Norm, Orig};
 use quickcheck::{TestResult, quickcheck};
-use acacia::tree::{Node, AssociatedData, DataQuery, Positioned};
-use acacia::ntree::Tree;
+use acacia::{Tree, Node, AssociatedData, DataQuery, Positioned};
 use acacia::partition::Ncube;
 
 
@@ -118,18 +117,16 @@ fn tree_gravity_approx() {
                 }
         );
         let theta = 0.5; // A bit arbitrary but this appears to work
-        let mut tree_gravity: Vec3<_> = zero();
-        tree.query_data(
-            &|node| {
+        let tree_gravity: Vec3<_> =
+            tree.query_data(|node| {
                 let &(ref center_of_mass, _) = node.data();
                 let d = FloatPnt::dist(&test_point, center_of_mass);
                 let delta = FloatPnt::dist(&node.partition().center(), center_of_mass);
                 d < node.partition().width() / theta + delta
-            },
-            &mut |&(com, m)| {
-                tree_gravity = tree_gravity + newton((m, com), test_point);
-            },
-        );
+            })
+            .map(|&(com, m)| newton((m, com), test_point))
+            .fold(zero(), |a, b| a + b);
+
         // Now the tree gravity should approximate the exact one, within 10 %
         TestResult::from_bool(simple_gravity.approx_eq_eps(&tree_gravity, &(0.1 * simple_gravity.norm())))
     }
