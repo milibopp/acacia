@@ -125,6 +125,7 @@ impl<P, O, D> AssociatedData for Tree<P, O, D> {
 }
 
 impl<'a, P: Clone + 'a, O: 'a, D: 'a> IntoIterator for &'a Tree<P, O, D> {
+    type Item = &'a O;
     type IntoIter = Iter<'a, Tree<P, O, D>>;
     fn into_iter(self) -> Iter<'a, Tree<P, O, D>> { Iter::new(self) }
 }
