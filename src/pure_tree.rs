@@ -84,6 +84,7 @@ impl<P: Clone, O> Node for PureTree<P, O> {
 }
 
 impl<'a, P: Clone + 'a, O: 'a> IntoIterator for &'a PureTree<P, O> {
+    type Item = &'a O;
     type IntoIter = Iter<'a, PureTree<P, O>>;
     fn into_iter(self) -> Iter<'a, PureTree<P, O>> { Iter::new(self) }
 }
