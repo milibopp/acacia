@@ -28,7 +28,7 @@ impl<'a, T> Iterator for Iter<'a, T>
                 (_, Empty) => self.next(),
                 (_, Leaf(obj)) => Some(obj),
                 (n, Branch(vec)) => {
-                    if let Some(child) = vec[].get(n) {
+                    if let Some(child) = vec.get(n) {
                         self.nodes.push((n + 1, node));
                         self.nodes.push((0, child));
                     }
@@ -68,7 +68,7 @@ impl<'a, T, R> Iterator for RecurseObjects<'a, T, R>
                 (_, Empty) => self.next(),
                 (_, Leaf(obj)) => Some(obj),
                 (n, Branch(vec)) => {
-                    if let Some(child) = vec[].get(n) {
+                    if let Some(child) = vec.get(n) {
                         if (self.recurse)(node) {
                             self.nodes.push((n + 1, node));
                             self.nodes.push((0, child));
@@ -117,7 +117,7 @@ impl<'a, T, R> Iterator for RecurseData<'a, T, R>
                     }
                 }
                 (Some(n), Branch(vec)) => {
-                    if let Some(child) = vec[].get(n) {
+                    if let Some(child) = vec.get(n) {
                         self.nodes.push((Some(n + 1), node));
                         self.nodes.push((None, child));
                     }
