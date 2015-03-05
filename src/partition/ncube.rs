@@ -43,12 +43,12 @@ impl<P, S> Subdivide for Ncube<P, S>
         let _2 = cast(2.0f64).unwrap();
         let dim = Dim::dim(None::<P>);
         let new_width = self.width / _2;
-        (0..2.pow(dim))
+        (0..2.pow(dim as u32))
             .map(|n: i32| {
                 let mut new_center = self.center;
                 let dx = new_width / _2;
-                for i in (0..dim) {
-                    new_center[i] = new_center[i] + match n / 2.pow(i) % 2 {
+                for i in 0..dim {
+                    new_center[i] = new_center[i] + match n / 2.pow(i as u32) % 2 {
                         0 => -dx,
                         1 => dx,
                         _ => unreachable!(),
