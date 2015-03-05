@@ -18,7 +18,7 @@ impl UnitQuad {
     /// This asserts that the offset is valid given the scale level.
     pub fn new(scale: u8, offset: (u32, u32)) -> UnitQuad {
         assert!(scale < 32); // Otherwise exponentiation will overflow
-        let max_offset = 2.pow(scale as usize);
+        let max_offset = 2.pow(scale as u32);
         assert!(offset.0 < max_offset && offset.1 < max_offset);
         UnitQuad { scale: scale, offset: offset }
     }
@@ -91,7 +91,7 @@ impl Arbitrary for UnitQuad {
             let max_scale = cmp::min(31, g.size()) as u8;
             g.gen_range(0, max_scale)
         };
-        let max_offset = 2.pow(scale as usize);
+        let max_offset = 2.pow(scale as u32);
         UnitQuad::new(scale, (
             g.gen_range(0, max_offset),
             g.gen_range(0, max_offset),
