@@ -89,7 +89,7 @@ fn tree_gravity_approx() {
         }
         let test_point = pnt(test_point);
         // Newton's law of gravity for two point masses (with G = 1)
-        let newton = |&:(m, p1): (f64, Pnt3<f64>), p2| {
+        let newton = |(m, p1): (f64, Pnt3<f64>), p2| {
             let diff: Vec3<f64> = p1 - p2;
             let r = diff.norm();
             diff * (m / r.powi(3))
