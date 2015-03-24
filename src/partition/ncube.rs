@@ -77,7 +77,7 @@ impl<P, S> Partition<P> for Ncube<P, S>
     }
 
     fn dispatch(&self, elem: &P) -> usize {
-        range(0, Dim::dim(None::<P>))
+        (0..Dim::dim(None::<P>))
             .map(|k| if elem[k] < self.center[k] {0} else {1 << k})
             .sum()
     }
