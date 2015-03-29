@@ -106,17 +106,17 @@ macro_rules! partition_quickcheck (
 
             #[test]
             fn is_total_elem() {
-                quickcheck(prop_is_total_elem as fn($p, $t) -> TestResult);
+                quickcheck(prop_is_total_elem::<$p, $t> as fn($p, $t) -> TestResult);
             }
 
             #[test]
             fn is_total_non_elem() {
-                quickcheck(prop_is_total_non_elem as fn($p, $t) -> TestResult);
+                quickcheck(prop_is_total_non_elem::<$p, $t> as fn($p, $t) -> TestResult);
             }
 
             #[test]
             fn consistent_dispatch() {
-                quickcheck(prop_consistent_dispatch as fn($p, $t) -> TestResult);
+                quickcheck(prop_consistent_dispatch::<$p, $t> as fn($p, $t) -> TestResult);
             }
         }
     )
