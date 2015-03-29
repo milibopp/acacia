@@ -1,8 +1,8 @@
 //! A spatial tree library
 
 #![warn(missing_docs)]
-#![allow(unused_features)]
-#![feature(core, hash, rand, test)]
+#![feature(core)]
+#![cfg_attr(test, feature(test))]
 
 extern crate nalgebra;
 #[macro_use]
