@@ -108,8 +108,11 @@ impl Quad {
         let _1: T = one();
         let _2: T = _1 + _1;
         let c: Vec2<T> = self.flat_quad.center();
-        let [n, t1, t2]: [Vec3<T>; 3] =
+        let triple: [Vec3<T>; 3] =
             axis_vector_triple(self.axis, self.direction);
+        let n = triple[0];
+        let t1 = triple[1];
+        let t2 = triple[2];
         n + t1 * (c.x * _2 - _1) + t2 * (c.y * _2 - _1)
     }
 
@@ -247,7 +250,11 @@ mod test {
     #[test]
     fn axis_vector_triples_are_right_handed() {
         fn check(axis: Axis, direction: Direction) -> bool {
-            let [n, t1, t2]: [Vec3<f64>; 3] = axis_vector_triple(axis, direction);
+            let triple: [Vec3<f64>; 3] =
+                axis_vector_triple(axis, direction);
+            let n = triple[0];
+            let t1 = triple[1];
+            let t2 = triple[2];
             n.cross(&t1) == t2
         }
         quickcheck(check as fn(Axis, Direction) -> bool);
