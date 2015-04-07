@@ -92,7 +92,6 @@ impl<'a, P: Clone + 'a, O: 'a> IntoIterator for &'a PureTree<P, O> {
 
 #[cfg(test)]
 mod test {
-    use std::iter::AdditiveIterator;
     use rand::distributions::{IndependentSample, Range};
     use rand::thread_rng;
     use test::Bencher;
@@ -148,7 +147,7 @@ mod test {
                     .filter(|other| other.position.dist(&Orig::orig()) < search_radius)
                     .count()
                 )
-                .sum()
+                .fold(0, |a, b| a + b)
         })
     }
 }

@@ -1,5 +1,6 @@
 //! Cubemapping module
 
+use num::{NumCast, Float};
 use nalgebra::{BaseFloat, Vec3, Vec2, Norm, zero, one};
 #[cfg(any(test, feature = "arbitrary"))]
 use quickcheck::{Arbitrary, Gen};
@@ -104,7 +105,7 @@ pub struct Quad {
 
 impl Quad {
     /// The center of this quad on the cube
-    pub fn center_on_cube<T: BaseFloat>(&self) -> Vec3<T> {
+    pub fn center_on_cube<T: BaseFloat + NumCast + Float>(&self) -> Vec3<T> {
         let _1: T = one();
         let _2: T = _1 + _1;
         let c: Vec2<T> = self.flat_quad.center();
@@ -117,7 +118,7 @@ impl Quad {
     }
 
     /// The center of this quad on the unit sphere
-    pub fn center_on_sphere<T: BaseFloat>(&self) -> Vec3<T> {
+    pub fn center_on_sphere<T: BaseFloat + NumCast + Float>(&self) -> Vec3<T> {
         self.center_on_cube().normalize()
     }
 }
@@ -135,7 +136,7 @@ impl Subdivide for Quad {
     }
 }
 
-impl<T: BaseFloat + PartialOrd> Partition<Vec3<T>> for Quad {
+impl<T: BaseFloat + PartialOrd + NumCast + Float> Partition<Vec3<T>> for Quad {
     fn contains(&self, elem: &Vec3<T>) -> bool {
         let _1: T = one();
         let _2: T = _1 + _1;
@@ -207,7 +208,7 @@ impl Subdivide for CubeMap {
     }
 }
 
-impl<T: BaseFloat + PartialOrd> Partition<Vec3<T>> for CubeMap {
+impl<T: BaseFloat + PartialOrd + NumCast + Float> Partition<Vec3<T>> for CubeMap {
     fn contains(&self, elem: &Vec3<T>) -> bool {
         match *self {
             CubeMap::Sphere => true,
