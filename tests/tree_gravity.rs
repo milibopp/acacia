@@ -6,7 +6,6 @@ extern crate acacia;
 extern crate nalgebra;
 extern crate quickcheck;
 
-use std::num::Float;
 use std::cmp::partial_max;
 use nalgebra::{ApproxEq, Pnt2, Pnt3, FloatPnt, Vec2, Vec3, zero, Norm, Orig};
 use quickcheck::{TestResult, quickcheck};
@@ -117,7 +116,7 @@ fn tree_gravity_approx() {
                 }
         );
         let theta = 0.5; // A bit arbitrary but this appears to work
-        let tree_gravity: Vec3<_> =
+        let tree_gravity =
             tree.query_data(|node| {
                 let &(ref center_of_mass, _) = node.data();
                 let d = FloatPnt::dist(&test_point, center_of_mass);
@@ -125,7 +124,7 @@ fn tree_gravity_approx() {
                 d < node.partition().width() / theta + delta
             })
             .map(|&(com, m)| newton((m, com), test_point))
-            .fold(zero(), |a, b| a + b);
+            .fold(zero::<Vec3<f64>>(), |a, b| a + b);
 
         // Now the tree gravity should approximate the exact one, within 10 %
         TestResult::from_bool(simple_gravity.approx_eq_eps(&tree_gravity, &(0.1 * simple_gravity.norm())))
