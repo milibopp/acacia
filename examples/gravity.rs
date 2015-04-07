@@ -4,7 +4,6 @@ extern crate acacia;
 
 use rand::thread_rng;
 use rand::distributions::{Range, IndependentSample};
-use std::num::Float;
 use nalgebra::{Pnt3, Vec3, FloatPnt, Norm, Orig, zero};
 use acacia::{Tree, DataQuery, Node, AssociatedData, Position};
 use acacia::partition::Ncube;
