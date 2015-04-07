@@ -20,6 +20,7 @@ arbitrary = ["nalgebra/arbitrary", "quickcheck"]
 nalgebra = "*"
 itertools = "*"
 rand = "*"
+num = "*"
 
 [dependencies.quickcheck]
 optional = true

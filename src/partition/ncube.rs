@@ -1,9 +1,8 @@
 //! N-cube or hypercube partitioning scheme
 
 use std::ops::{Index, IndexMut};
-use std::num::{Int, cast};
+use num::{PrimInt, NumCast};
 use std::cmp::PartialOrd;
-use std::iter::AdditiveIterator;
 use nalgebra::{Dim, BaseFloat, Zero, zero};
 #[cfg(any(test, feature = "arbitrary"))]
 use quickcheck::{Arbitrary, Gen};
@@ -37,10 +36,10 @@ impl<P: Clone, S> Ncube<P, S> {
 
 impl<P, S> Subdivide for Ncube<P, S>
     where P: Dim + Index<usize, Output=S> + IndexMut<usize, Output=S> + Copy,
-          S: BaseFloat + PartialOrd,
+          S: BaseFloat + PartialOrd + NumCast,
 {
     fn subdivide(&self) -> Vec<Ncube<P, S>> {
-        let _2 = cast(2.0f64).unwrap();
+        let _2 = NumCast::from(2.0f64).unwrap();
         let dim = Dim::dim(None::<P>);
         let new_width = self.width / _2;
         (0..2.pow(dim as u32))
@@ -65,10 +64,10 @@ impl<P, S> Subdivide for Ncube<P, S>
 
 impl<P, S> Partition<P> for Ncube<P, S>
     where P: Dim + Index<usize, Output=S> + IndexMut<usize, Output=S> + Copy,
-          S: BaseFloat + PartialOrd,
+          S: BaseFloat + PartialOrd + NumCast,
 {
     fn contains(&self, elem: &P) -> bool {
-        let _2 = cast(2.0f64).unwrap();
+        let _2 = NumCast::from(2.0f64).unwrap();
         (0..Dim::dim(None::<P>))
             .all(|i| {
                 let off = (self.center[i] - elem[i]) * _2;
@@ -79,7 +78,7 @@ impl<P, S> Partition<P> for Ncube<P, S>
     fn dispatch(&self, elem: &P) -> usize {
         (0..Dim::dim(None::<P>))
             .map(|k| if elem[k] < self.center[k] {0} else {1 << k})
-            .sum()
+            .fold(0, |a, b| a + b)
     }
 }
 

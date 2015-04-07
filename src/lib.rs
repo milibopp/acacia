@@ -1,13 +1,13 @@
 //! A spatial tree library
 
 #![warn(missing_docs)]
-#![feature(core)]
 #![cfg_attr(test, feature(test))]
 
 extern crate nalgebra;
 #[macro_use]
 extern crate itertools;
 extern crate rand;
+extern crate num;
 
 #[cfg(any(test, feature = "arbitrary"))]
 extern crate quickcheck;

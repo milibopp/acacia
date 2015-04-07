@@ -1,4 +1,4 @@
-use std::num::{Int, Float, cast};
+use num::{PrimInt, Float, NumCast};
 #[cfg(any(test, feature = "arbitrary"))]
 use quickcheck::{Arbitrary, Gen};
 use nalgebra::{Vec2, BaseFloat};
@@ -30,24 +30,24 @@ impl UnitQuad {
     pub fn offset(&self) -> (u32, u32) { self.offset }
 
     /// Get coordinate within the partition from (u, v) coordinates
-    pub fn coordinate<T: BaseFloat>(&self, coord: (T, T)) -> Vec2<T> {
+    pub fn coordinate<T: BaseFloat + NumCast + Float>(&self, coord: (T, T)) -> Vec2<T> {
         let (u, v) = coord;
         let width: T = self.width();
         Vec2::new(
-            width * (cast::<_, T>(self.offset.0).unwrap() + u),
-            width * (cast::<_, T>(self.offset.1).unwrap() + v),
+            width * (<T as NumCast>::from(self.offset.0).unwrap() + u),
+            width * (<T as NumCast>::from(self.offset.1).unwrap() + v),
         )
     }
 
     /// Center of the partitioned region
-    pub fn center<T: BaseFloat>(&self) -> Vec2<T> {
-        let half = cast(0.5).unwrap();
+    pub fn center<T: BaseFloat + NumCast + Float>(&self) -> Vec2<T> {
+        let half = NumCast::from(0.5).unwrap();
         self.coordinate((half, half))
     }
 
     /// Width of the partitioned region
-    pub fn width<T: BaseFloat>(&self) -> T {
-        cast::<_, T>(0.5).unwrap().powi(self.scale as i32)
+    pub fn width<T: BaseFloat + NumCast + Float>(&self) -> T {
+        Float::powi(<T as NumCast>::from(0.5).unwrap(), self.scale as i32)
     }
 }
 
@@ -63,13 +63,13 @@ impl Subdivide for UnitQuad {
     }
 }
 
-impl<T: BaseFloat> Partition<Vec2<T>> for UnitQuad
+impl<T: BaseFloat + NumCast + Float> Partition<Vec2<T>> for UnitQuad
 {
     fn contains(&self, elem: &Vec2<T>) -> bool {
         let width: T = self.width();
         let offset = Vec2::new(
-            width * cast(self.offset.0).unwrap(),
-            width * cast(self.offset.1).unwrap(),
+            width * NumCast::from(self.offset.0).unwrap(),
+            width * NumCast::from(self.offset.1).unwrap(),
         );
         (offset.x < elem.x) && (elem.x < offset.x + width) &&
         (offset.y < elem.y) && (elem.y < offset.y + width)
