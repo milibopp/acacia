@@ -1,3 +1,6 @@
+[![Build Status](https://img.shields.io/travis/aepsil0n/acacia.svg)](https://travis-ci.org/aepsil0n/acacia)
+[![](https://img.shields.io/crates/v/acacia.svg)](https://crates.io/crates/acacia)
+
 *acacia* is a spatial tree library written in Rust. It is generic over the
 dimension of the partitioned space and thus supports binary trees, quadtrees,
 octrees, etc. The intended goal is to implement these features as fast and
@@ -8,16 +11,11 @@ test coverage, but both the API and the internals will likely change in the
 future to improve interface and performance.
 
 
-## Status
-
-[![Build Status](https://travis-ci.org/aepsil0n/acacia.svg?branch=master)](https://travis-ci.org/aepsil0n/acacia)
-
-
 ## Features
 
 - Tree construction from a simple iterator.
 - Associate data to a tree during construction using closures.
-- Arbitrary computational queries can be performed on the trees.
+- Perform arbitrary computational queries on the trees.
 - Faster dimension-specific trees, e.g. an octree (not yet implemented)
 
 
