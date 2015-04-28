@@ -1,9 +1,9 @@
 //! N-cube or hypercube partitioning scheme
 
 use std::ops::{Index, IndexMut};
-use num::{PrimInt, NumCast};
+use num::{PrimInt, NumCast, Zero};
 use std::cmp::PartialOrd;
-use nalgebra::{Dim, BaseFloat, Zero, zero};
+use nalgebra::{Dim, BaseFloat, zero};
 #[cfg(any(test, feature = "arbitrary"))]
 use quickcheck::{Arbitrary, Gen};
 use partition::{Partition, Subdivide};
