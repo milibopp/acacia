@@ -1,6 +1,6 @@
 [package]
 name = "acacia"
-version = "0.0.5"
+version = "0.0.6"
 authors = ["Emilia Bopp <Emilia.bopp@aepsil0n.de>"]
 description = "A spatial partitioning and tree library."
 documentation = "http://www.rust-ci.org/aepsil0n/acacia/doc/acacia/"
