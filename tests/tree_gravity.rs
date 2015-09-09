@@ -6,7 +6,6 @@ extern crate acacia;
 extern crate nalgebra;
 extern crate quickcheck;
 
-use std::cmp::partial_max;
 use nalgebra::{ApproxEq, Pnt2, Pnt3, FloatPnt, Vec2, Vec3, zero, Norm, Orig};
 use quickcheck::{TestResult, quickcheck};
 use acacia::{Tree, Node, AssociatedData, DataQuery, Positioned};
@@ -99,11 +98,13 @@ fn tree_gravity_approx() {
             .fold(zero(), |a: Vec3<_>, b| a + b);
         // Calculate gravity using a tree
         let orig: Pnt3<f64> = Orig::orig();
+        let data_width = test_point.as_vec().norm() * 2.0;
+        let width = if data_width < 200.0 { 200.0 } else { data_width };
         let tree = Tree::new(
             starfield.iter().map(|&(m, (x, y, z))|
                 Positioned { object: m, position: Pnt3::new(x, y, z) }
             ),
-            Ncube::new(orig, partial_max(test_point.as_vec().norm() * 2.0, 200.0).unwrap()),
+            Ncube::new(orig, width),
             (orig, zero()),
             &|obj| (obj.position, obj.object),
             &|&(com1, m1), &(com2, m2)|
