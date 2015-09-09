@@ -3,6 +3,10 @@ language: rust
 rust:
     - nightly
 
+os:
+    - linux
+    - osx	
+
 env:
     global:
         - secure: iIyvsi4dPz6kr0KN5eNu8OSTvWuCJ99FXaR9kDl4hxvI22e2wJPiYeqSlGkbdu5rBh+93HDf37FRplHI8s/Y/EREFxBWsQOBaj9HP/1YD7VyL0scF6My/p92n+f8hQ9IZIlblPN6q/sHZKwwnyMBBsncXtl4YlncEpa4MIv5gOA=
