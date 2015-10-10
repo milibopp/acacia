@@ -29,4 +29,5 @@ optional = true
 quickcheck = "0.2"
 
 [dev-dependencies.nalgebra]
+version = "0.2"
 features = ["arbitrary"]
