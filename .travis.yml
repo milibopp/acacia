@@ -23,4 +23,7 @@ script:
     - cargo doc --verbose
 
 after_script:
-    - curl http://www.rust-ci.org/artifacts/put?t=$RUSTCI_TOKEN | sh
+    - |
+      [ ${TRAVIS_REPO_SLUG} == "aepsil0n/acacia" ] &&
+      [ ${TRAVIS_PULL_REQUEST} == "false" ] &&
+      ( curl http://www.rust-ci.org/artifacts/put?t=$RUSTCI_TOKEN | sh )
