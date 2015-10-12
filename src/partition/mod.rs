@@ -10,7 +10,7 @@ use quickcheck::TestResult;
 
 
 /// A type that can be subdivided
-pub trait Subdivide {
+pub trait Subdivide: Sized {
     /// Subdivide into smaller partitions
     fn subdivide(&self) -> Vec<Self>;
 }

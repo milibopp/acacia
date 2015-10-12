@@ -64,7 +64,7 @@ pub trait AssociatedData {
 /// determine the recursion behavior.
 ///
 /// This is an extension trait of `Node`.
-pub trait ObjectQuery: Node {
+pub trait ObjectQuery: Node + Sized {
     /// Iterate over objects through all nodes.
     ///
     /// This method yields an iterator that walks recursively through the tree,
@@ -100,7 +100,7 @@ impl<T> ObjectQuery for T
 /// # Type parameters
 ///
 /// - `D` is the type of the associated data.
-pub trait DataQuery: AssociatedData {
+pub trait DataQuery: AssociatedData + Sized {
 
     /// Compute a query on the associated data using a mutable accumulator
     ///
