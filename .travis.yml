@@ -3,10 +3,6 @@ language: rust
 rust:
     - nightly
 
-os:
-    - linux
-    - osx	
-
 before_script:
   - |
     pip install 'travis-cargo==0.1.8' --user &&
