@@ -1,7 +1,5 @@
 //! Simple integration tests oriented towards gravity computations
 
-#![feature(core)]
-
 extern crate acacia;
 extern crate nalgebra;
 extern crate quickcheck;
