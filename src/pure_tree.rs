@@ -7,7 +7,7 @@ use partition::Partition;
 use iter::Iter;
 
 
-/// A pure N-dimensional tree
+/// A pure N-dimensionensional tree
 pub struct PureTree<P, O> {
     state: NodeState<O, Vec<PureTree<P, O>>>,
     partition: P,
@@ -95,7 +95,7 @@ mod test {
     use rand::distributions::{IndependentSample, Range};
     use rand::thread_rng;
     use test::Bencher;
-    use nalgebra::{Pnt2, FloatPnt, Orig};
+    use nalgebra::{Point2, FloatPoint, Origin};
 
     use traits::{Node, ObjectQuery, Positioned};
     use partition::Ncube;
@@ -103,37 +103,37 @@ mod test {
 
     #[bench]
     fn pure_tree_quad_new_1000(b: &mut Bencher) {
-        let coord_dist = Range::new(-1.0f64, 1.0);
+        let coord_distance = Range::new(-1.0f64, 1.0);
         let mut rng = thread_rng();
         let vec: Vec<_> = (0..1000).map(|_| Positioned {
             object: (),
-            position: Pnt2::new(
-                coord_dist.ind_sample(&mut rng),
-                coord_dist.ind_sample(&mut rng)
+            position: Point2::new(
+                coord_distance.ind_sample(&mut rng),
+                coord_distance.ind_sample(&mut rng)
             ),
         }).collect();
         b.iter(|| {
             PureTree::new(
                 vec.iter().map(|a| a.clone()),
-                Ncube::new(Orig::orig(), 2.0),
+                Ncube::new(Origin::origin(), 2.0),
             )
         })
     }
 
     #[bench]
     fn pure_tree_query_objects(b: &mut Bencher) {
-        let coord_dist = Range::new(-1.0f64, 1.0);
+        let coord_distance = Range::new(-1.0f64, 1.0);
         let mut rng = thread_rng();
         let search_radius = 0.3;
         let tree = PureTree::new(
             (0..1000).map(|_| Positioned {
                 object: (),
-                position: Pnt2::new(
-                    coord_dist.ind_sample(&mut rng),
-                    coord_dist.ind_sample(&mut rng)
+                position: Point2::new(
+                    coord_distance.ind_sample(&mut rng),
+                    coord_distance.ind_sample(&mut rng)
                 ),
             }),
-            Ncube::new(Orig::orig(), 200.0),
+            Ncube::new(Origin::origin(), 200.0),
         );
         b.iter(|| {
             // Count the number of objects within the search radius 10000 times
@@ -141,10 +141,10 @@ mod test {
                 .map(|_|
                     tree.query_objects(|node|
                         node.partition()
-                        .center().dist(&Orig::orig())
+                        .center().distance(&Origin::origin())
                         < search_radius + node.partition().width() / 2.0,
                     )
-                    .filter(|other| other.position.dist(&Orig::orig()) < search_radius)
+                    .filter(|other| other.position.distance(&Origin::origin()) < search_radius)
                     .count()
                 )
                 .fold(0, |a, b| a + b)

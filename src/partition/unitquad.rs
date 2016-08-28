@@ -1,7 +1,7 @@
 use num::{PrimInt, Float, NumCast};
 #[cfg(any(test, feature = "arbitrary"))]
 use quickcheck::{Arbitrary, Gen};
-use nalgebra::{Vec2, BaseFloat};
+use nalgebra::{Vector2, BaseFloat};
 use partition::{Partition, Subdivide};
 
 
@@ -30,17 +30,17 @@ impl UnitQuad {
     pub fn offset(&self) -> (u32, u32) { self.offset }
 
     /// Get coordinate within the partition from (u, v) coordinates
-    pub fn coordinate<T: BaseFloat + NumCast + Float>(&self, coord: (T, T)) -> Vec2<T> {
+    pub fn coordinate<T: BaseFloat + NumCast + Float>(&self, coord: (T, T)) -> Vector2<T> {
         let (u, v) = coord;
         let width: T = self.width();
-        Vec2::new(
+        Vector2::new(
             width * (<T as NumCast>::from(self.offset.0).unwrap() + u),
             width * (<T as NumCast>::from(self.offset.1).unwrap() + v),
         )
     }
 
     /// Center of the partitioned region
-    pub fn center<T: BaseFloat + NumCast + Float>(&self) -> Vec2<T> {
+    pub fn center<T: BaseFloat + NumCast + Float>(&self) -> Vector2<T> {
         let half = NumCast::from(0.5).unwrap();
         self.coordinate((half, half))
     }
@@ -63,11 +63,11 @@ impl Subdivide for UnitQuad {
     }
 }
 
-impl<T: BaseFloat + NumCast + Float> Partition<Vec2<T>> for UnitQuad
+impl<T: BaseFloat + NumCast + Float> Partition<Vector2<T>> for UnitQuad
 {
-    fn contains(&self, elem: &Vec2<T>) -> bool {
+    fn contains(&self, elem: &Vector2<T>) -> bool {
         let width: T = self.width();
-        let offset = Vec2::new(
+        let offset = Vector2::new(
             width * NumCast::from(self.offset.0).unwrap(),
             width * NumCast::from(self.offset.1).unwrap(),
         );
@@ -102,23 +102,23 @@ impl Arbitrary for UnitQuad {
 
 #[cfg(test)]
 mod test {
-    pub use nalgebra::Vec2;
+    pub use nalgebra::Vector2;
     pub use super::*;
     use quickcheck::{quickcheck, TestResult};
     use partition::Partition;
 
-    partition_quickcheck!(unitquad_vec2_f32, UnitQuad, Vec2<f32>);
-    partition_quickcheck!(unitquad_vec2_f64, UnitQuad, Vec2<f64>);
+    partition_quickcheck!(unitquad_vec2_f32, UnitQuad, Vector2<f32>);
+    partition_quickcheck!(unitquad_vec2_f64, UnitQuad, Vector2<f64>);
 
     #[test]
     fn unitquad_base_contains_region() {
-        fn check(v: Vec2<f64>) -> TestResult {
+        fn check(v: Vector2<f64>) -> TestResult {
             if v.x < 0.0 || v.x >= 1.0 || v.y < 0.0 || v.y >= 1.0 {
                 TestResult::discard()
             } else {
                 TestResult::from_bool(UnitQuad::new(0, (0, 0)).contains(&v))
             }
         }
-        quickcheck(check as fn(Vec2<f64>) -> TestResult);
+        quickcheck(check as fn(Vector2<f64>) -> TestResult);
     }
 }
