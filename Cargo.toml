@@ -17,8 +17,8 @@ debug = false
 arbitrary = ["nalgebra/arbitrary", "quickcheck"]
 
 [dependencies]
-nalgebra = "0.3"
-itertools = "0.3"
+nalgebra = "0.9"
+itertools = "0.4"
 rand = "0.3"
 num = "0.1"
 
@@ -30,5 +30,5 @@ version = "0.2"
 quickcheck = "0.2"
 
 [dev-dependencies.nalgebra]
-version = "0.3"
+version = "0.9"
 features = ["arbitrary"]

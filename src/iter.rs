@@ -132,7 +132,7 @@ impl<'a, T, R> Iterator for RecurseData<'a, T, R>
 
 #[cfg(test)]
 mod test {
-    use nalgebra::{Pnt2, Orig};
+    use nalgebra::{Point2, Origin};
 
     use partition::Ncube;
     use traits::{Positioned, Node};
@@ -143,10 +143,10 @@ mod test {
     fn iter_pure_tree() {
         let tree = PureTree::new(
             vec![
-                Positioned { object: 1, position: Pnt2::new(-0.1, 1.0) },
-                Positioned { object: 2, position: Pnt2::new(0.5, -0.3) },
+                Positioned { object: 1, position: Point2::new(-0.1, 1.0) },
+                Positioned { object: 2, position: Point2::new(0.5, -0.3) },
             ].into_iter(),
-            Ncube::new(Orig::orig(), 2.0)
+            Ncube::new(Origin::origin(), 2.0)
         );
         let all: Vec<_> = Iter::new(&tree).collect();
         assert_eq!(all.len(), 2);
@@ -157,11 +157,11 @@ mod test {
     fn recurse_objects_pure_tree() {
         let tree = PureTree::new(
             vec![
-                Positioned { object: 1i32, position: Pnt2::new(-0.1, 0.8) },
-                Positioned { object: 2, position: Pnt2::new(-0.2, 0.7) },
-                Positioned { object: 3, position: Pnt2::new(0.5, -0.3) },
+                Positioned { object: 1i32, position: Point2::new(-0.1, 0.8) },
+                Positioned { object: 2, position: Point2::new(-0.2, 0.7) },
+                Positioned { object: 3, position: Point2::new(0.5, -0.3) },
             ].into_iter(),
-            Ncube::new(Orig::orig(), 2.0)
+            Ncube::new(Origin::origin(), 2.0)
         );
         let all: Vec<_> =
             RecurseObjects::new(

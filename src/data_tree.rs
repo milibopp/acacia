@@ -7,9 +7,9 @@ use partition::Partition;
 use iter::Iter;
 
 
-/// An N-dimensional tree
+/// An N-dimensionensional tree
 ///
-/// This tree does not know the dimension of its point at compile time, as it is
+/// This tree does not know the dimensionension of its point at compile time, as it is
 /// not hard-coded and genericity over constants is unsupported in Rust.
 pub struct Tree<P, O, D> {
     state: NodeState<O, Vec<Tree<P, O, D>>>,
@@ -136,7 +136,7 @@ mod test {
     use rand::distributions::{IndependentSample, Range};
     use rand::thread_rng;
     use test::Bencher;
-    use nalgebra::{Pnt2, Vec2, Orig};
+    use nalgebra::{Point2, Vector2, Origin};
     use quickcheck::quickcheck;
 
     use partition::Ncube;
@@ -145,8 +145,8 @@ mod test {
 
     #[test]
     fn tree_insert_into_empty() {
-        let mut n = Tree::empty(Ncube::new(Pnt2::new(0.0f32, 0.0), 10.0f32), ());
-        n.insert(Positioned { object: (), position: Pnt2::new(1.0f32, 0.0) }, ());
+        let mut n = Tree::empty(Ncube::new(Point2::new(0.0f32, 0.0), 10.0f32), ());
+        n.insert(Positioned { object: (), position: Point2::new(1.0f32, 0.0) }, ());
         match n.state {
             NodeState::Leaf(_) => (),
             _ => panic!("node is no leaf")
@@ -155,9 +155,9 @@ mod test {
 
     #[test]
     fn tree_branch_on_second_insert() {
-        let mut n = Tree::empty(Ncube::new(Pnt2::new(0.0, 0.0), 10.0), ());
-        n.insert(Positioned { object: 1i32, position: Pnt2::new(1.0, -2.0) }, ());
-        n.insert(Positioned { object: 2, position: Pnt2::new(2.0, 1.0) }, ());
+        let mut n = Tree::empty(Ncube::new(Point2::new(0.0, 0.0), 10.0), ());
+        n.insert(Positioned { object: 1i32, position: Point2::new(1.0, -2.0) }, ());
+        n.insert(Positioned { object: 2, position: Point2::new(2.0, 1.0) }, ());
         match n.state {
             NodeState::Branch(nodes) => {
                 for k in 1..3 {
@@ -173,10 +173,10 @@ mod test {
 
     #[test]
     fn tree_from_empty_vec() {
-        let tree: Tree<Ncube<Pnt2<f64>, f64>, Positioned<u8, Pnt2<f64>>, ()> =
+        let tree: Tree<Ncube<Point2<f64>, f64>, Positioned<u8, Point2<f64>>, ()> =
             Tree::new(
                 vec![].into_iter(),
-                Ncube::new(Pnt2::new(0.0, 0.0), 1.0),
+                Ncube::new(Point2::new(0.0, 0.0), 1.0),
                 (), &|_| (), &|_, _| ()
             );
         match tree.state {
@@ -192,9 +192,9 @@ mod test {
                 data.iter()
                 .map(|&(x, y)| Positioned {
                     object: (),
-                    position: Pnt2::new(x, y),
+                    position: Point2::new(x, y),
                 }),
-                Ncube::new(Orig::orig(), 200.0),
+                Ncube::new(Origin::origin(), 200.0),
                 (), &|_| (), &|_, _| ()
             );
             (data.len() >= 2) == (
@@ -212,8 +212,8 @@ mod test {
         fn tree_from_iter_one_is_a_leaf(data: Vec<(f64, f64)>) -> bool {
             let tree = Tree::new(
                 data.iter()
-                .map(|&(x, y)| Positioned { object: (), position: Pnt2::new(x, y) }),
-                Ncube::new(Orig::orig(), 200.0),
+                .map(|&(x, y)| Positioned { object: (), position: Point2::new(x, y) }),
+                Ncube::new(Origin::origin(), 200.0),
                 (), &|_| (), &|_, _| ()
             );
             (data.len() == 1) == (
@@ -228,21 +228,21 @@ mod test {
 
     #[bench]
     fn tree_quad_with_center_of_mass_new_1000(b: &mut Bencher) {
-        let coord_dist = Range::new(-1.0f64, 1.0);
+        let coord_distance = Range::new(-1.0f64, 1.0);
         let mut rng = thread_rng();
         let vec: Vec<_> = (0..1000).map(|_| Positioned {
             object: 1.0,
-            position: Pnt2::new(
-                coord_dist.ind_sample(&mut rng),
-                coord_dist.ind_sample(&mut rng)
+            position: Point2::new(
+                coord_distance.ind_sample(&mut rng),
+                coord_distance.ind_sample(&mut rng)
             ),
         }).collect();
         b.iter(|| {
             Tree::new(
                 vec.iter().map(|a| a.clone()),
-                Ncube::new(Orig::orig(), 2.0),
-                (Vec2::new(0.0f64, 0.0), 0.0f64),
-                &|obj| (obj.position.to_vec() * obj.object, obj.object),
+                Ncube::new(Origin::origin(), 2.0),
+                (Vector2::new(0.0f64, 0.0), 0.0f64),
+                &|obj| (obj.position.to_vector() * obj.object, obj.object),
                 &|&(mps, ms), &(mp, m)| (mps + mp, ms + m)
             )
         })
