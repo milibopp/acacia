@@ -3,7 +3,7 @@
 use std::ops::{Index, IndexMut};
 use num::{PrimInt, NumCast, Zero};
 use std::cmp::PartialOrd;
-use nalgebra::{Dim, BaseFloat, zero};
+use nalgebra::{Dimension, BaseFloat, zero};
 #[cfg(any(test, feature = "arbitrary"))]
 use quickcheck::{Arbitrary, Gen};
 use partition::{Partition, Subdivide};
@@ -35,18 +35,18 @@ impl<P: Clone, S> Ncube<P, S> {
 }
 
 impl<P, S> Subdivide for Ncube<P, S>
-    where P: Dim + Index<usize, Output=S> + IndexMut<usize, Output=S> + Copy,
+    where P: Dimension + Index<usize, Output=S> + IndexMut<usize, Output=S> + Copy,
           S: BaseFloat + PartialOrd + NumCast,
 {
     fn subdivide(&self) -> Vec<Ncube<P, S>> {
         let _2 = NumCast::from(2.0f64).unwrap();
-        let dim = Dim::dim(None::<P>);
+        let dimension = Dimension::dimension(None::<P>);
         let new_width = self.width / _2;
-        (0..2.pow(dim as u32))
+        (0..2.pow(dimension as u32))
             .map(|n: i32| {
                 let mut new_center = self.center;
                 let dx = new_width / _2;
-                for i in 0..dim {
+                for i in 0..dimension {
                     new_center[i] = new_center[i] + match n / 2.pow(i as u32) % 2 {
                         0 => -dx,
                         1 => dx,
@@ -63,12 +63,12 @@ impl<P, S> Subdivide for Ncube<P, S>
 }
 
 impl<P, S> Partition<P> for Ncube<P, S>
-    where P: Dim + Index<usize, Output=S> + IndexMut<usize, Output=S> + Copy,
+    where P: Dimension + Index<usize, Output=S> + IndexMut<usize, Output=S> + Copy,
           S: BaseFloat + PartialOrd + NumCast,
 {
     fn contains(&self, elem: &P) -> bool {
         let _2 = NumCast::from(2.0f64).unwrap();
-        (0..Dim::dim(None::<P>))
+        (0..Dimension::dimension(None::<P>))
             .all(|i| {
                 let off = (self.center[i] - elem[i]) * _2;
                 (-self.width <= off) && (off < self.width)
@@ -76,7 +76,7 @@ impl<P, S> Partition<P> for Ncube<P, S>
     }
 
     fn dispatch(&self, elem: &P) -> usize {
-        (0..Dim::dim(None::<P>))
+        (0..Dimension::dimension(None::<P>))
             .map(|k| if elem[k] < self.center[k] {0} else {1 << k})
             .fold(0, |a, b| a + b)
     }
@@ -100,8 +100,8 @@ impl<P: Arbitrary, S: PartialOrd + Zero + Arbitrary> Arbitrary for Ncube<P, S> {
 
 #[cfg(test)]
 mod test {
-    pub use nalgebra::Pnt2;
+    pub use nalgebra::Point2;
     pub use super::*;
 
-    partition_quickcheck!(ncube_pnt2_f32_partition, Ncube<Pnt2<f32>, f32>, Pnt2<f32>);
+    partition_quickcheck!(ncube_pnt2_f32_partition, Ncube<Point2<f32>, f32>, Point2<f32>);
 }
