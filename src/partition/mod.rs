@@ -124,7 +124,7 @@ macro_rules! partition_quickcheck (
 
 
 /// The notion of a mid point between two inputs
-trait Mid {
+pub trait Mid {
     /// Return the mid between this point and another
     fn mid(&self, other: &Self) -> Self;
 }

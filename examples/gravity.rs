@@ -4,27 +4,27 @@ extern crate acacia;
 
 use rand::thread_rng;
 use rand::distributions::{Range, IndependentSample};
-use nalgebra::{Pnt3, Vec3, FloatPnt, Norm, Orig, zero};
+use nalgebra::{Point3, Vector3, FloatPoint, Norm, Origin, zero};
 use acacia::{Tree, DataQuery, Node, AssociatedData, Position};
 use acacia::partition::Ncube;
 
 /// Point mass
 struct PointMass {
     mass: f64,
-    position: Pnt3<f64>,
+    position: Point3<f64>,
 }
 
 impl Position for PointMass {
-    type Point = Pnt3<f64>;
-    fn position(&self) -> Pnt3<f64> {
+    type Point = Point3<f64>;
+    fn position(&self) -> Point3<f64> {
         self.position
     }
 }
 
 
 /// Newton's law of gravity for two point masses (with G = 1)
-fn newton(m: f64, p1: Pnt3<f64>, p2: Pnt3<f64>) -> Vec3<f64> {
-    let diff: Vec3<f64> = p1 - p2;
+fn newton(m: f64, p1: Point3<f64>, p2: Point3<f64>) -> Vector3<f64> {
+    let diff: Vector3<f64> = p1 - p2;
     let r = diff.norm();
     diff * m / r.powi(3)
 }
@@ -32,13 +32,13 @@ fn newton(m: f64, p1: Pnt3<f64>, p2: Pnt3<f64>) -> Vec3<f64> {
 
 fn main() {
     // Shortcut
-    let origin: Pnt3<f64> = Orig::orig();
+    let origin: Point3<f64> = Origin::origin();
 
     // Generate a number of particles
     let mut rng = thread_rng();
     let coord_range = Range::new(-5.0, 5.0);
     let particles: Vec<_> = (0..1000).map(|_|
-        PointMass { mass: 1.0, position: Pnt3::new(
+        PointMass { mass: 1.0, position: Point3::new(
             coord_range.ind_sample(&mut rng),
             coord_range.ind_sample(&mut rng),
             coord_range.ind_sample(&mut rng)) })
@@ -65,7 +65,7 @@ fn main() {
         // branch nodes on higher levels get their associated data.
         &|&(com1, m1), &(com2, m2)|
             if m1 + m2 > 0.0 {(
-                origin + (com1.to_vec() * m1 + com2.to_vec() * m2) / (m1 + m2),
+                origin + (com1.to_vector() * m1 + com2.to_vector() * m2) / (m1 + m2),
                 m1 + m2,
             )}
             else {
@@ -75,16 +75,16 @@ fn main() {
 
     // This is the point, at which we want to know the gravitational
     // acceleration.
-    let test_point = Pnt3::new(2.3, -4.1, 1.6);
+    let test_point = Point3::new(2.3, -4.1, 1.6);
 
     let theta = 0.5; // A bit arbitrary but this appears to work
-    let tree_gravity: Vec3<f64> =
+    let tree_gravity: Vector3<f64> =
         // This is the recursion criterion. If a branch node passes this, the
         // query continues on its children.
         tree.query_data(|node| {
             let &(ref center_of_mass, _) = node.data();
-            let d = FloatPnt::dist(&test_point, center_of_mass);
-            let delta = FloatPnt::dist(&node.partition().center(), center_of_mass);
+            let d = FloatPoint::distance(&test_point, center_of_mass);
+            let delta = FloatPoint::distance(&node.partition().center(), center_of_mass);
             d < node.partition().width() / theta + delta
         })
         // This collects our force term from each piece of associated data the
@@ -93,7 +93,7 @@ fn main() {
         .fold(zero(), |a, b| a + b);
 
     // Calculate gravity exactly for comparison
-    let exact_gravity: Vec3<f64> = particles.iter()
+    let exact_gravity: Vector3<f64> = particles.iter()
         .map(|particle| newton(particle.mass, particle.position, test_point))
         .fold(zero(), |a, b| a + b);
 
