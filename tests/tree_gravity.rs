@@ -41,7 +41,7 @@ fn tree_center_of_mass() {
             (zero(), 0.0),
             &|obj| (obj.position.to_vector() * obj.object, obj.object),
             &|&(mps, ms), &(mp, m)| (mps + mp, ms + m)
-        );
+        ).expect("Couldn't construct tree");
         let (tree_mps, tree_ms) = *tree.data();
         // …and compare
         TestResult::from_bool(ApproxEq::approx_eq(&(tree_mps / tree_ms), &com))
@@ -113,7 +113,7 @@ fn tree_gravity_approx() {
                 else {
                     (orig, zero())
                 }
-        );
+        ).expect("Couldn't construct tree");
         let theta = 0.5; // A bit arbitrary but this appears to work
         let tree_gravity =
             tree.query_data(|node| {

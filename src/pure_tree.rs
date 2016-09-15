@@ -5,6 +5,7 @@ use std::iter::IntoIterator;
 use traits::{NodeState, Node, Position};
 use partition::Partition;
 use iter::Iter;
+use error::ConstructionError;
 
 
 /// A pure N-dimensional tree
@@ -30,12 +31,16 @@ impl<P, O> PureTree<P, O>
           P: Partition<<O as Position>::Point>,
 {
     /// Construct a tree without checking the geometry of the input data
-    pub fn new<I: Iterator<Item=O>>(iter: I, partition: P) -> PureTree<P, O> {
+    pub fn new<I: Iterator<Item=O>>(iter: I, partition: P) -> Result<PureTree<P, O>, ConstructionError> {
         let mut tree = PureTree::empty(partition);
         for object in iter {
-            tree.insert(object)
+            if tree.partition.contains(&object.position()) {
+                tree.insert(object)
+            } else {
+                return Err(ConstructionError::ObjectOutsidePartition);
+            }
         }
-        tree
+        Ok(tree)
     }
 
     fn dispatch(&self, nodes: &mut Vec<PureTree<P, O>>, object: O) {
@@ -96,10 +101,37 @@ mod test {
     use rand::thread_rng;
     use test::Bencher;
     use nalgebra::{Point2, FloatPoint, Origin};
+    use quickcheck::{TestResult, quickcheck};
 
+    use error::ConstructionError;
     use traits::{Node, ObjectQuery, Positioned};
     use partition::Ncube;
     use super::*;
+
+    #[test]
+    fn pure_tree_construction_error_object_outside_partition() {
+        fn pure_tree_construction_error_object_outside_partition(input: (Vec<(f64, f64)>, f64)) -> TestResult {
+            let (data, domain_size) = input;
+
+            // Have atleast one object, the size of the domain should be positive, and atleast
+            // one object outside the domain should exist
+            if data.is_empty() ||
+               domain_size <= 0.0 ||
+               data.iter().all(|&(x, y)| x.abs() < domain_size && y.abs() < domain_size)
+            {
+                return TestResult::discard();
+            }
+
+            TestResult::from_bool(match PureTree::new(
+                data.iter().map(|&(x, y)| Positioned { object: (), position: Point2::new(x, y) }),
+                Ncube::new(Origin::origin(), domain_size)
+            ) {
+                Err(ConstructionError::ObjectOutsidePartition) => true,
+                _ => false
+            })
+        }
+        quickcheck(pure_tree_construction_error_object_outside_partition as fn(input: (Vec<(f64, f64)>, f64)) -> TestResult)
+    }
 
     #[bench]
     fn pure_tree_quad_new_1000(b: &mut Bencher) {
@@ -134,7 +166,7 @@ mod test {
                 ),
             }),
             Ncube::new(Origin::origin(), 200.0),
-        );
+        ).expect("Couldn't construct tree");
         b.iter(|| {
             // Count the number of objects within the search radius 10000 times
             (0..10000)

@@ -71,7 +71,7 @@ fn main() {
             else {
                 (origin, 0.0)
             }
-    );
+    ).expect("Couldn't construct tree");
 
     // This is the point, at which we want to know the gravitational
     // acceleration.
