@@ -7,7 +7,7 @@ use partition::Partition;
 use iter::Iter;
 
 
-/// A pure N-dimensionensional tree
+/// A pure N-dimensional tree
 pub struct PureTree<P, O> {
     state: NodeState<O, Vec<PureTree<P, O>>>,
     partition: P,

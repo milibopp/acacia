@@ -7,9 +7,9 @@ use partition::Partition;
 use iter::Iter;
 
 
-/// An N-dimensionensional tree
+/// An N-dimensional tree
 ///
-/// This tree does not know the dimensionension of its point at compile time, as it is
+/// This tree does not know the dimension of its point at compile time, as it is
 /// not hard-coded and genericity over constants is unsupported in Rust.
 pub struct Tree<P, O, D> {
     state: NodeState<O, Vec<Tree<P, O, D>>>,
