@@ -9,7 +9,7 @@ use partition::{Partition, Subdivide, UnitQuad};
 
 /// An axis direction
 ///
-/// This effectively distanceinguishes whether we are moving in positive or negative
+/// This effectively distinguishes whether we are moving in positive or negative
 /// direction along some axis, i.e. +X vs -X, +Y vs. -Y etc.
 #[derive(Copy, Clone, Debug, PartialEq, Hash, Eq)]
 pub enum Direction {
