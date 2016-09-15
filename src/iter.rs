@@ -147,7 +147,7 @@ mod test {
                 Positioned { object: 2, position: Point2::new(0.5, -0.3) },
             ].into_iter(),
             Ncube::new(Origin::origin(), 2.0)
-        );
+        ).expect("Couldn't construct tree");
         let all: Vec<_> = Iter::new(&tree).collect();
         assert_eq!(all.len(), 2);
         assert!(all[0].object == 1 || all[1].object == 1);
@@ -162,7 +162,7 @@ mod test {
                 Positioned { object: 3, position: Point2::new(0.5, -0.3) },
             ].into_iter(),
             Ncube::new(Origin::origin(), 2.0)
-        );
+        ).expect("Couldn't construct tree");
         let all: Vec<_> =
             RecurseObjects::new(
                 &tree,
