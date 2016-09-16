@@ -17,9 +17,11 @@ extern crate test;
 pub use traits::*;
 pub use pure_tree::PureTree;
 pub use data_tree::Tree;
+pub use error::ConstructionError;
 
 pub mod partition;
 pub mod pure_tree;
 pub mod data_tree;
 pub mod traits;
 pub mod iter;
+pub mod error;
