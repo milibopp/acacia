@@ -8,7 +8,7 @@ homepage = "https://github.com/aepsil0n/acacia"
 repository = "https://github.com/aepsil0n/acacia"
 readme = "README.md"
 keywords = ["algorithms", "math", "tree", "spatial"]
-license = "GPL-3.0+"
+license = "MPL-2.0"
 
 [profile.test]
 debug = false
