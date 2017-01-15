@@ -18,10 +18,8 @@ fn tree_center_of_mass() {
             return TestResult::discard();
         }
         // No two points should be in the same place
-        for i in 0..data.len() {
-            for j in 0..i {
-                let (_, pi) = data[i];
-                let (_, pj) = data[j];
+        for &(_, pi) in &data {
+            for &(_, pj) in &data {
                 if pi == pj {
                     return TestResult::discard();
                 }
@@ -69,10 +67,8 @@ fn tree_gravity_approx() {
             return TestResult::discard();
         }
         // No two stars should be in the same place
-        for i in 0..starfield.len() {
-            for j in 0..i {
-                let (_, pi) = starfield[i];
-                let (_, pj) = starfield[j];
+        for &(_, pi) in &starfield {
+            for &(_, pj) in &starfield {
                 if pi == pj {
                     return TestResult::discard();
                 }
