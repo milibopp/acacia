@@ -1,6 +1,6 @@
 [![Build Status](https://img.shields.io/travis/aepsil0n/acacia.svg)](https://travis-ci.org/aepsil0n/acacia)
 [![](https://img.shields.io/crates/v/acacia.svg)](https://crates.io/crates/acacia)
-[![](https://docs.rs/mio/badge.svg)](https://docs.rs/acacia/)
+[![](https://docs.rs/acacia/badge.svg)](https://docs.rs/acacia/)
 
 *acacia* is a spatial tree library written in Rust. It is generic over the
 dimension of the partitioned space and thus supports binary trees, quadtrees,
