@@ -24,10 +24,10 @@ num = "0.3"
 
 [dependencies.quickcheck]
 optional = true
-version = "0.2"
+version = "0.9"
 
 [dev-dependencies]
-quickcheck = "0.2"
+quickcheck = "0.9"
 
 [dev-dependencies.nalgebra]
 version = "0.10"
