@@ -93,7 +93,7 @@ pub fn prop_consistent_dispatch<P: Partition<T>, T>(partition: P, elem: T) -> Te
 }
 
 
-#[macro_escape]
+#[cfg(test)]
 macro_rules! partition_quickcheck (
     ($testfn: ident, $p: ty, $t: ty) => (
         mod $testfn {

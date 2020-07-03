@@ -1,7 +1,6 @@
 //! A spatial tree library
 
 #![warn(missing_docs)]
-#![cfg_attr(test, feature(test))]
 
 extern crate nalgebra;
 #[macro_use]
@@ -11,8 +10,6 @@ extern crate num;
 
 #[cfg(any(test, feature = "arbitrary"))]
 extern crate quickcheck;
-#[cfg(test)]
-extern crate test;
 
 pub use traits::*;
 pub use pure_tree::PureTree;
