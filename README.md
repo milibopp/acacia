@@ -17,7 +17,6 @@ future to improve interface and performance.
 - Tree construction from a simple iterator.
 - Associate data to a tree during construction using closures.
 - Perform arbitrary computational queries on the trees.
-- Faster dimension-specific trees, e.g. an octree (not yet implemented)
 
 
 ## Example: N-body gravity calculation
