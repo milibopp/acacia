@@ -1,10 +1,12 @@
 //! Cubemapping module
 
-use num::{NumCast, Float};
-use nalgebra::{BaseFloat, Vector3, Vector2, Norm, zero, one};
+use num_traits::{NumCast, Float};
+use nalgebra::{Scalar, Vector3, Vector2, zero, one, ComplexField, ClosedMul, ClosedAdd};
 #[cfg(any(test, feature = "arbitrary"))]
 use quickcheck::{Arbitrary, Gen};
 use partition::{Partition, Subdivide, UnitQuad};
+#[cfg(any(test, feature = "arbitrary"))]
+use rand::Rng;
 
 
 /// An axis direction
@@ -62,7 +64,7 @@ impl Arbitrary for Axis {
 ///
 /// The first vector is the normal vector n, the remaining are tangents t_1 and
 /// t_2. They form a basis that is right-handed, i.e. n × t_1 = t_2.
-pub fn axis_vector_triple<T: BaseFloat>(axis: Axis, direction: Direction) -> [Vector3<T>; 3] {
+pub fn axis_vector_triple<T: Scalar + Float>(axis: Axis, direction: Direction) -> [Vector3<T>; 3] {
     let _p: T = one();
     let _n: T = -_p;
     let _0: T = zero();
@@ -105,20 +107,20 @@ pub struct Quad {
 
 impl Quad {
     /// The center of this quad on the cube
-    pub fn center_on_cube<T: BaseFloat + NumCast + Float>(&self) -> Vector3<T> {
+    pub fn center_on_cube<T: Scalar + NumCast + Float + ClosedMul + ClosedAdd>(&self) -> Vector3<T> {
         let _1: T = one();
         let _2: T = _1 + _1;
         let c: Vector2<T> = self.flat_quad.center();
         let triple: [Vector3<T>; 3] =
             axis_vector_triple(self.axis, self.direction);
-        let n = triple[0];
+        let n: Vector3<T> = triple[0];
         let t1 = triple[1];
         let t2 = triple[2];
         n + t1 * (c.x * _2 - _1) + t2 * (c.y * _2 - _1)
     }
 
     /// The center of this quad on the unit sphere
-    pub fn center_on_sphere<T: BaseFloat + NumCast + Float>(&self) -> Vector3<T> {
+    pub fn center_on_sphere<T: Scalar + NumCast + Float + ComplexField>(&self) -> Vector3<T> {
         self.center_on_cube().normalize()
     }
 }
@@ -136,7 +138,7 @@ impl Subdivide for Quad {
     }
 }
 
-impl<T: BaseFloat + PartialOrd + NumCast + Float> Partition<Vector3<T>> for Quad {
+impl<T: Scalar + PartialOrd + NumCast + Float> Partition<Vector3<T>> for Quad {
     fn contains(&self, elem: &Vector3<T>) -> bool {
         let _1: T = one();
         let _2: T = _1 + _1;
@@ -208,7 +210,7 @@ impl Subdivide for CubeMap {
     }
 }
 
-impl<T: BaseFloat + PartialOrd + NumCast + Float> Partition<Vector3<T>> for CubeMap {
+impl<T: Scalar + PartialOrd + NumCast + Float> Partition<Vector3<T>> for CubeMap {
     fn contains(&self, elem: &Vector3<T>) -> bool {
         match *self {
             CubeMap::Sphere => true,
@@ -230,7 +232,7 @@ impl Arbitrary for CubeMap {
 
 #[cfg(test)]
 mod test {
-    pub use nalgebra::{Vector3, Cross};
+    pub use nalgebra::Vector3;
     pub use super::*;
     use quickcheck::quickcheck;
     use partition::Partition;
