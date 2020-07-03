@@ -48,11 +48,9 @@ associated data to compute values for branch nodes.
     (origin, 0.0),
     &|obj| (obj.position, obj.mass),
     &|&(com1, m1), &(com2, m2)|
-        if m1 + m2 > 0.0 {(
-            origin + (com1.to_vec() * m1 + com2.to_vec() * m2) / (m1 + m2),
-            m1 + m2,
-        )}
-        else {
+        if m1 + m2 > 0.0 {
+            (com1 + (com2 - com1) * (m2 / (m1 + m2)), m1 + m2)
+        } else {
             (origin, 0.0)
         }
 );
