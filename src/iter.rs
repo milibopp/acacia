@@ -132,7 +132,7 @@ impl<'a, T, R> Iterator for RecurseData<'a, T, R>
 
 #[cfg(test)]
 mod test {
-    use nalgebra::{Point2, Origin};
+    use nalgebra::Point2;
 
     use partition::Ncube;
     use traits::{Positioned, Node};
@@ -146,7 +146,7 @@ mod test {
                 Positioned { object: 1, position: Point2::new(-0.1, 1.0) },
                 Positioned { object: 2, position: Point2::new(0.5, -0.3) },
             ].into_iter(),
-            Ncube::new(Origin::origin(), 2.0)
+            Ncube::new(Point2::origin(), 2.0)
         ).expect("Couldn't construct tree");
         let all: Vec<_> = Iter::new(&tree).collect();
         assert_eq!(all.len(), 2);
@@ -161,7 +161,7 @@ mod test {
                 Positioned { object: 2, position: Point2::new(-0.2, 0.7) },
                 Positioned { object: 3, position: Point2::new(0.5, -0.3) },
             ].into_iter(),
-            Ncube::new(Origin::origin(), 2.0)
+            Ncube::new(Point2::origin(), 2.0)
         ).expect("Couldn't construct tree");
         let all: Vec<_> =
             RecurseObjects::new(

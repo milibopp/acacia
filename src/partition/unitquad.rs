@@ -1,8 +1,10 @@
-use num::{PrimInt, Float, NumCast};
+use num_traits::{PrimInt, Float, NumCast};
 #[cfg(any(test, feature = "arbitrary"))]
 use quickcheck::{Arbitrary, Gen};
-use nalgebra::{Vector2, BaseFloat};
+use nalgebra::{Vector2, Scalar};
 use partition::{Partition, Subdivide};
+#[cfg(any(test, feature = "arbitrary"))]
+use rand::Rng;
 
 
 /// A partition of the unit quad [0, 1) × [0, 1)
@@ -30,7 +32,7 @@ impl UnitQuad {
     pub fn offset(&self) -> (u32, u32) { self.offset }
 
     /// Get coordinate within the partition from (u, v) coordinates
-    pub fn coordinate<T: BaseFloat + NumCast + Float>(&self, coord: (T, T)) -> Vector2<T> {
+    pub fn coordinate<T: Scalar + NumCast + Float>(&self, coord: (T, T)) -> Vector2<T> {
         let (u, v) = coord;
         let width: T = self.width();
         Vector2::new(
@@ -40,13 +42,13 @@ impl UnitQuad {
     }
 
     /// Center of the partitioned region
-    pub fn center<T: BaseFloat + NumCast + Float>(&self) -> Vector2<T> {
+    pub fn center<T: Scalar + NumCast + Float>(&self) -> Vector2<T> {
         let half = NumCast::from(0.5).unwrap();
         self.coordinate((half, half))
     }
 
     /// Width of the partitioned region
-    pub fn width<T: BaseFloat + NumCast + Float>(&self) -> T {
+    pub fn width<T: Scalar + NumCast + Float>(&self) -> T {
         Float::powi(<T as NumCast>::from(0.5).unwrap(), self.scale as i32)
     }
 }
@@ -63,7 +65,7 @@ impl Subdivide for UnitQuad {
     }
 }
 
-impl<T: BaseFloat + NumCast + Float> Partition<Vector2<T>> for UnitQuad
+impl<T: Scalar + NumCast + Float> Partition<Vector2<T>> for UnitQuad
 {
     fn contains(&self, elem: &Vector2<T>) -> bool {
         let width: T = self.width();

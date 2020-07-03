@@ -139,7 +139,7 @@ impl<'a, P: Clone + 'a, O: 'a, D: 'a> IntoIterator for &'a Tree<P, O, D> {
 #[cfg(test)]
 mod test {
     // use test::Bencher;
-    use nalgebra::{Point2, Origin};
+    use nalgebra::{Point2, base::dimension::U2};
     use quickcheck::{TestResult, quickcheck};
 
     use partition::Ncube;
@@ -177,7 +177,7 @@ mod test {
 
     #[test]
     fn tree_from_empty_vec() {
-        let tree: Tree<Ncube<Point2<f64>, f64>, Positioned<u8, Point2<f64>>, ()> =
+        let tree: Tree<Ncube<U2, f64>, Positioned<u8, Point2<f64>>, ()> =
             Tree::new(
                 vec![].into_iter(),
                 Ncube::new(Point2::new(0.0, 0.0), 1.0),
@@ -198,7 +198,7 @@ mod test {
                     object: (),
                     position: Point2::new(x, y),
                 }),
-                Ncube::new(Origin::origin(), 200.0),
+                Ncube::new(Point2::origin(), 200.0),
                 (), &|_| (), &|_, _| ()
             ).expect("Couldn't construct tree");
             (data.len() >= 2) == (
@@ -217,7 +217,7 @@ mod test {
             let tree = Tree::new(
                 data.iter()
                 .map(|&(x, y)| Positioned { object: (), position: Point2::new(x, y) }),
-                Ncube::new(Origin::origin(), 200.0),
+                Ncube::new(Point2::origin(), 200.0),
                 (), &|_| (), &|_, _| ()
             ).expect("Couldn't construct tree");
             (data.len() == 1) == (
@@ -246,7 +246,7 @@ mod test {
 
             TestResult::from_bool(match Tree::new(
                 data.iter().map(|&(x, y)| Positioned { object: (), position: Point2::new(x, y) }),
-                Ncube::new(Origin::origin(), domain_size),
+                Ncube::new(Point2::origin(), domain_size),
                 (), &|_| (), &|_, _| ()
             ) {
                 Err(ConstructionError::ObjectOutsidePartition) => true,
@@ -270,7 +270,7 @@ mod test {
     //     b.iter(|| {
     //         Tree::new(
     //             vec.iter().map(|a| a.clone()),
-    //             Ncube::new(Origin::origin(), 2.0),
+    //             Ncube::new(Point2::origin(), 2.0),
     //             (Vector2::new(0.0f64, 0.0), 0.0f64),
     //             &|obj| (obj.position.to_vector() * obj.object, obj.object),
     //             &|&(mps, ms), &(mp, m)| (mps + mp, ms + m)

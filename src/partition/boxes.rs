@@ -4,6 +4,7 @@ use nalgebra::{Vector2, Vector3};
 #[cfg(any(test, feature = "arbitrary"))]
 use quickcheck::{Arbitrary, Gen};
 use partition::{Partition, Subdivide, Interval, Mid};
+use std::fmt::Debug;
 
 
 macro_rules! impl_box {
@@ -31,7 +32,7 @@ macro_rules! impl_partition_for_box {
             }
         }
 
-        impl<T: Mid + PartialOrd + Copy> Partition<$v<T>> for $b<T> {
+        impl<T: Debug + Mid + PartialOrd + Copy + 'static> Partition<$v<T>> for $b<T> {
             fn contains(&self, elem: &$v<T>) -> bool {
                 true $(&& self.$param.contains(&elem.$param))*
             }

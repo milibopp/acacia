@@ -98,7 +98,7 @@ impl<'a, P: Clone + 'a, O: 'a> IntoIterator for &'a PureTree<P, O> {
 #[cfg(test)]
 mod test {
     // use test::Bencher;
-    use nalgebra::{Point2, Origin};
+    use nalgebra::Point2;
     use quickcheck::{TestResult, quickcheck};
 
     use error::ConstructionError;
@@ -122,7 +122,7 @@ mod test {
 
             TestResult::from_bool(match PureTree::new(
                 data.iter().map(|&(x, y)| Positioned { object: (), position: Point2::new(x, y) }),
-                Ncube::new(Origin::origin(), domain_size)
+                Ncube::new(Point2::origin(), domain_size)
             ) {
                 Err(ConstructionError::ObjectOutsidePartition) => true,
                 _ => false
@@ -145,7 +145,7 @@ mod test {
     //     b.iter(|| {
     //         PureTree::new(
     //             vec.iter().map(|a| a.clone()),
-    //             Ncube::new(Origin::origin(), 2.0),
+    //             Ncube::new(Point2::origin(), 2.0),
     //         )
     //     })
     // }
@@ -163,7 +163,7 @@ mod test {
     //                 coord_distance.ind_sample(&mut rng)
     //             ),
     //         }),
-    //         Ncube::new(Origin::origin(), 200.0),
+    //         Ncube::new(Point2::origin(), 200.0),
     //     ).expect("Couldn't construct tree");
     //     b.iter(|| {
     //         // Count the number of objects within the search radius 10000 times
@@ -171,10 +171,10 @@ mod test {
     //             .map(|_|
     //                 tree.query_objects(|node|
     //                     node.partition()
-    //                     .center().distance(&Origin::origin())
+    //                     .center().distance(&Point2::origin())
     //                     < search_radius + node.partition().width() / 2.0,
     //                 )
-    //                 .filter(|other| other.position.distance(&Origin::origin()) < search_radius)
+    //                 .filter(|other| other.position.distance(&Point2::origin()) < search_radius)
     //                 .count()
     //             )
     //             .fold(0, |a, b| a + b)

@@ -17,18 +17,19 @@ debug = false
 arbitrary = ["nalgebra/arbitrary", "quickcheck"]
 
 [dependencies]
-nalgebra = "0.10"
+nalgebra = "0.21"
 itertools = "0.9"
-rand = "0.3"
-num = "0.3"
+rand = "0.7"
+num-traits = "0.2"
 
 [dependencies.quickcheck]
 optional = true
-version = "0.2"
+version = "0.9"
 
 [dev-dependencies]
-quickcheck = "0.2"
+approx = "0.3"
+quickcheck = "0.9"
 
 [dev-dependencies.nalgebra]
-version = "0.10"
+version = "0.21"
 features = ["arbitrary"]
