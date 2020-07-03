@@ -97,14 +97,12 @@ impl<'a, P: Clone + 'a, O: 'a> IntoIterator for &'a PureTree<P, O> {
 
 #[cfg(test)]
 mod test {
-    use rand::distributions::{IndependentSample, Range};
-    use rand::thread_rng;
-    use test::Bencher;
-    use nalgebra::{Point2, FloatPoint, Origin};
+    // use test::Bencher;
+    use nalgebra::{Point2, Origin};
     use quickcheck::{TestResult, quickcheck};
 
     use error::ConstructionError;
-    use traits::{Node, ObjectQuery, Positioned};
+    use traits::Positioned;
     use partition::Ncube;
     use super::*;
 
@@ -133,53 +131,53 @@ mod test {
         quickcheck(pure_tree_construction_error_object_outside_partition as fn(input: (Vec<(f64, f64)>, f64)) -> TestResult)
     }
 
-    #[bench]
-    fn pure_tree_quad_new_1000(b: &mut Bencher) {
-        let coord_distance = Range::new(-1.0f64, 1.0);
-        let mut rng = thread_rng();
-        let vec: Vec<_> = (0..1000).map(|_| Positioned {
-            object: (),
-            position: Point2::new(
-                coord_distance.ind_sample(&mut rng),
-                coord_distance.ind_sample(&mut rng)
-            ),
-        }).collect();
-        b.iter(|| {
-            PureTree::new(
-                vec.iter().map(|a| a.clone()),
-                Ncube::new(Origin::origin(), 2.0),
-            )
-        })
-    }
+    // #[bench]
+    // fn pure_tree_quad_new_1000(b: &mut Bencher) {
+    //     let coord_distance = Range::new(-1.0f64, 1.0);
+    //     let mut rng = thread_rng();
+    //     let vec: Vec<_> = (0..1000).map(|_| Positioned {
+    //         object: (),
+    //         position: Point2::new(
+    //             coord_distance.ind_sample(&mut rng),
+    //             coord_distance.ind_sample(&mut rng)
+    //         ),
+    //     }).collect();
+    //     b.iter(|| {
+    //         PureTree::new(
+    //             vec.iter().map(|a| a.clone()),
+    //             Ncube::new(Origin::origin(), 2.0),
+    //         )
+    //     })
+    // }
 
-    #[bench]
-    fn pure_tree_query_objects(b: &mut Bencher) {
-        let coord_distance = Range::new(-1.0f64, 1.0);
-        let mut rng = thread_rng();
-        let search_radius = 0.3;
-        let tree = PureTree::new(
-            (0..1000).map(|_| Positioned {
-                object: (),
-                position: Point2::new(
-                    coord_distance.ind_sample(&mut rng),
-                    coord_distance.ind_sample(&mut rng)
-                ),
-            }),
-            Ncube::new(Origin::origin(), 200.0),
-        ).expect("Couldn't construct tree");
-        b.iter(|| {
-            // Count the number of objects within the search radius 10000 times
-            (0..10000)
-                .map(|_|
-                    tree.query_objects(|node|
-                        node.partition()
-                        .center().distance(&Origin::origin())
-                        < search_radius + node.partition().width() / 2.0,
-                    )
-                    .filter(|other| other.position.distance(&Origin::origin()) < search_radius)
-                    .count()
-                )
-                .fold(0, |a, b| a + b)
-        })
-    }
+    // #[bench]
+    // fn pure_tree_query_objects(b: &mut Bencher) {
+    //     let coord_distance = Range::new(-1.0f64, 1.0);
+    //     let mut rng = thread_rng();
+    //     let search_radius = 0.3;
+    //     let tree = PureTree::new(
+    //         (0..1000).map(|_| Positioned {
+    //             object: (),
+    //             position: Point2::new(
+    //                 coord_distance.ind_sample(&mut rng),
+    //                 coord_distance.ind_sample(&mut rng)
+    //             ),
+    //         }),
+    //         Ncube::new(Origin::origin(), 200.0),
+    //     ).expect("Couldn't construct tree");
+    //     b.iter(|| {
+    //         // Count the number of objects within the search radius 10000 times
+    //         (0..10000)
+    //             .map(|_|
+    //                 tree.query_objects(|node|
+    //                     node.partition()
+    //                     .center().distance(&Origin::origin())
+    //                     < search_radius + node.partition().width() / 2.0,
+    //                 )
+    //                 .filter(|other| other.position.distance(&Origin::origin()) < search_radius)
+    //                 .count()
+    //             )
+    //             .fold(0, |a, b| a + b)
+    //     })
+    // }
 }

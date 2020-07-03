@@ -138,14 +138,12 @@ impl<'a, P: Clone + 'a, O: 'a, D: 'a> IntoIterator for &'a Tree<P, O, D> {
 
 #[cfg(test)]
 mod test {
-    use rand::distributions::{IndependentSample, Range};
-    use rand::thread_rng;
-    use test::Bencher;
-    use nalgebra::{Point2, Vector2, Origin};
+    // use test::Bencher;
+    use nalgebra::{Point2, Origin};
     use quickcheck::{TestResult, quickcheck};
 
     use partition::Ncube;
-    use traits::{NodeState, Node, Positioned};
+    use traits::{NodeState, Positioned};
     use error::ConstructionError;
     use super::*;
 
@@ -258,26 +256,25 @@ mod test {
         quickcheck(tree_construction_error_object_outside_partition as fn(input: (Vec<(f64, f64)>, f64)) -> TestResult)
     }
 
-    #[bench]
-    fn tree_quad_with_center_of_mass_new_1000(b: &mut Bencher) {
-        let coord_distance = Range::new(-1.0f64, 1.0);
-        let mut rng = thread_rng();
-        let vec: Vec<_> = (0..1000).map(|_| Positioned {
-            object: 1.0,
-            position: Point2::new(
-                coord_distance.ind_sample(&mut rng),
-                coord_distance.ind_sample(&mut rng)
-            ),
-        }).collect();
-        b.iter(|| {
-            Tree::new(
-                vec.iter().map(|a| a.clone()),
-                Ncube::new(Origin::origin(), 2.0),
-                (Vector2::new(0.0f64, 0.0), 0.0f64),
-                &|obj| (obj.position.to_vector() * obj.object, obj.object),
-                &|&(mps, ms), &(mp, m)| (mps + mp, ms + m)
-            ).expect("Couldn't construct tree")
-        })
-    }
-
+    // #[bench]
+    // fn tree_quad_with_center_of_mass_new_1000(b: &mut Bencher) {
+    //     let coord_distance = Range::new(-1.0f64, 1.0);
+    //     let mut rng = thread_rng();
+    //     let vec: Vec<_> = (0..1000).map(|_| Positioned {
+    //         object: 1.0,
+    //         position: Point2::new(
+    //             coord_distance.ind_sample(&mut rng),
+    //             coord_distance.ind_sample(&mut rng)
+    //         ),
+    //     }).collect();
+    //     b.iter(|| {
+    //         Tree::new(
+    //             vec.iter().map(|a| a.clone()),
+    //             Ncube::new(Origin::origin(), 2.0),
+    //             (Vector2::new(0.0f64, 0.0), 0.0f64),
+    //             &|obj| (obj.position.to_vector() * obj.object, obj.object),
+    //             &|&(mps, ms), &(mp, m)| (mps + mp, ms + m)
+    //         ).expect("Couldn't construct tree")
+    //     })
+    // }
 }
