@@ -5,23 +5,10 @@ rust:
     - beta
     - nightly
 
-before_script:
-  - |
-    pip install 'travis-cargo<0.2' --user &&
-    export PATH=$HOME/.local/bin:$PATH
-
 script:
   - |
     rustc --version
     cargo --version
-    travis-cargo build &&
-    travis-cargo test &&
-    travis-cargo doc
-
-after_success:
-    - travis-cargo doc-upload
-
-env:
-    global:
-        - secure: iIyvsi4dPz6kr0KN5eNu8OSTvWuCJ99FXaR9kDl4hxvI22e2wJPiYeqSlGkbdu5rBh+93HDf37FRplHI8s/Y/EREFxBWsQOBaj9HP/1YD7VyL0scF6My/p92n+f8hQ9IZIlblPN6q/sHZKwwnyMBBsncXtl4YlncEpa4MIv5gOA=
-        - TRAVIS_CARGO_NIGHTLY_FEATURE=""
+    cargo build
+    cargo test
+    cargo doc
