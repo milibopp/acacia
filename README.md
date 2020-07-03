@@ -1,4 +1,4 @@
-[![Build Status](https://img.shields.io/travis/aepsil0n/acacia.svg)](https://travis-ci.org/aepsil0n/acacia)
+[![Build Status](https://img.shields.io/travis/edibopp/acacia.svg)](https://travis-ci.org/edibopp/acacia)
 [![](https://img.shields.io/crates/v/acacia.svg)](https://crates.io/crates/acacia)
 [![](https://docs.rs/acacia/badge.svg)](https://docs.rs/acacia/)
 
