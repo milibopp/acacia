@@ -27,7 +27,7 @@ optional = true
 version = "0.9"
 
 [dev-dependencies]
-approx = "0.3"
+approx = "0.4"
 quickcheck = "0.9"
 
 [dev-dependencies.nalgebra]
