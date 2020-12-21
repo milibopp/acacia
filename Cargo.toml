@@ -19,7 +19,7 @@ arbitrary = ["nalgebra/arbitrary", "quickcheck"]
 [dependencies]
 nalgebra = "0.23"
 itertools = "0.9"
-rand = "0.7"
+rand = "0.8"
 num-traits = "0.2"
 
 [dependencies.quickcheck]
