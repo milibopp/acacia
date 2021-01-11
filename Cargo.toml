@@ -24,11 +24,11 @@ num-traits = "0.2"
 
 [dependencies.quickcheck]
 optional = true
-version = "0.9"
+version = "1.0"
 
 [dev-dependencies]
 approx = "0.4"
-quickcheck = "0.9"
+quickcheck = "1.0"
 
 [dev-dependencies.nalgebra]
 version = "0.24"
