@@ -18,7 +18,7 @@ arbitrary = ["nalgebra/arbitrary", "quickcheck"]
 
 [dependencies]
 nalgebra = "0.25"
-itertools = "0.9"
+itertools = "0.10"
 rand = "0.8"
 num-traits = "0.2"
 
