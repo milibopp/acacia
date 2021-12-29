@@ -1,9 +1,11 @@
 //! Abstraction of spatial partitioning schemes
 
-pub use partition::interval::Interval;
-pub use partition::boxes::{Box2, Box3};
-pub use partition::ncube::Ncube;
-pub use partition::unitquad::UnitQuad;
+pub use self::{
+    interval::Interval,
+    boxes::{Box2, Box3},
+    ncube::Ncube,
+    unitquad::UnitQuad,
+};
 
 #[cfg(any(test, feature = "arbitrary"))]
 use quickcheck::TestResult;

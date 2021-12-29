@@ -2,9 +2,7 @@ use num_traits::{PrimInt, Float, NumCast};
 #[cfg(any(test, feature = "arbitrary"))]
 use quickcheck::{Arbitrary, Gen};
 use nalgebra::{Vector2, Scalar};
-use partition::{Partition, Subdivide};
-#[cfg(any(test, feature = "arbitrary"))]
-use rand::Rng;
+use super::{Partition, Subdivide};
 
 
 /// A partition of the unit quad [0, 1) × [0, 1)
@@ -80,22 +78,16 @@ impl<T: Scalar + NumCast + Float> Partition<Vector2<T>> for UnitQuad
 
 #[cfg(any(test, feature = "arbitrary"))]
 impl Arbitrary for UnitQuad {
-    fn arbitrary<G: Gen>(g: &mut G) -> UnitQuad {
-        use std::cmp;
-        // FIXME: somehow this explicit usage of the `Rng` trait is required for
-        // the `.gen_range` calls, even though `Rng: Gen`. The compiler
-        // complains that the "source trait is private". Curiously, adding this
-        // import here fixes the same situation in the `cubemap` module as well.
+    fn arbitrary(g: &mut Gen) -> UnitQuad {
         let scale: u8 = {
             // scale >= 32 is invalid (overflow)
             // At scale >= 31 subdivision fails
-            let max_scale = cmp::min(31, g.size()) as u8;
-            g.gen_range(0, max_scale)
+            u8::arbitrary(g) % 31
         };
-        let max_offset = 2.pow(scale as u32);
+        let mask = 2.pow(scale as u32) - 1;
         UnitQuad::new(scale, (
-            g.gen_range(0, max_offset),
-            g.gen_range(0, max_offset),
+            u32::arbitrary(g) & mask,
+            u32::arbitrary(g) & mask,
         ))
     }
 }
@@ -103,10 +95,9 @@ impl Arbitrary for UnitQuad {
 
 #[cfg(test)]
 mod test {
-    pub use nalgebra::Vector2;
-    pub use super::*;
+    use nalgebra::Vector2;
+    use super::*;
     use quickcheck::{quickcheck, TestResult};
-    use partition::Partition;
 
     partition_quickcheck!(unitquad_vec2_f32, UnitQuad, Vector2<f32>);
     partition_quickcheck!(unitquad_vec2_f64, UnitQuad, Vector2<f64>);

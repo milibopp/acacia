@@ -1,11 +1,15 @@
 //! Pure tree implementation.
 
-use std::mem;
-use std::iter::IntoIterator;
-use traits::{NodeState, Node, Position};
-use partition::Partition;
-use iter::Iter;
-use error::ConstructionError;
+use std::{
+    mem,
+    iter::IntoIterator,
+};
+use crate::{
+    traits::{NodeState, Node, Position},
+    partition::Partition,
+    iter::Iter,
+    error::ConstructionError,
+};
 
 
 /// A pure N-dimensional tree
@@ -75,7 +79,7 @@ impl<P: Clone, O> Node for PureTree<P, O> {
     type Container = Vec<PureTree<P, O>>;
 
     fn state(&self) -> NodeState<&O, &Vec<PureTree<P, O>>> {
-        use traits::NodeState::*;
+        use crate::traits::NodeState::*;
         match self.state {
             Empty => Empty,
             Leaf(ref obj) => Leaf(obj),
@@ -101,9 +105,11 @@ mod test {
     use nalgebra::Point2;
     use quickcheck::{TestResult, quickcheck};
 
-    use error::ConstructionError;
-    use traits::Positioned;
-    use partition::Ncube;
+    use crate::{
+        error::ConstructionError,
+        traits::Positioned,
+        partition::Ncube,
+    };
     use super::*;
 
     #[test]

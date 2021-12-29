@@ -1,6 +1,6 @@
 //! Common abstractions for all trees
 
-use iter::{RecurseObjects, RecurseData};
+use crate::iter::{RecurseObjects, RecurseData};
 
 
 /// The state of a node

@@ -4,9 +4,7 @@ use num_traits::{NumCast, Float};
 use nalgebra::{Scalar, Vector3, Vector2, zero, one, ComplexField, ClosedMul, ClosedAdd};
 #[cfg(any(test, feature = "arbitrary"))]
 use quickcheck::{Arbitrary, Gen};
-use partition::{Partition, Subdivide, UnitQuad};
-#[cfg(any(test, feature = "arbitrary"))]
-use rand::Rng;
+use super::{Partition, Subdivide, UnitQuad};
 
 
 /// An axis direction
@@ -24,12 +22,8 @@ pub enum Direction {
 
 #[cfg(any(test, feature = "arbitrary"))]
 impl Arbitrary for Direction {
-    fn arbitrary<G: Gen>(g: &mut G) -> Direction {
-        match g.gen_range(0, 2) {
-            0 => Direction::Positive,
-            1 => Direction::Negative,
-            _ => unreachable!(),
-        }
+    fn arbitrary(g: &mut Gen) -> Direction {
+        *g.choose(&[Direction::Positive, Direction::Negative]).unwrap()
     }
 }
 
@@ -49,13 +43,8 @@ pub enum Axis {
 
 #[cfg(any(test, feature = "arbitrary"))]
 impl Arbitrary for Axis {
-    fn arbitrary<G: Gen>(g: &mut G) -> Axis {
-        match g.gen_range(0, 3) {
-            0 => Axis::X,
-            1 => Axis::Y,
-            2 => Axis::Z,
-            _ => unreachable!(),
-        }
+    fn arbitrary(g: &mut Gen) -> Axis {
+        *g.choose(&[Axis::X, Axis::Y, Axis::Z]).unwrap()
     }
 }
 
@@ -160,7 +149,7 @@ impl<T: Scalar + PartialOrd + NumCast + Float> Partition<Vector3<T>> for Quad {
 
 #[cfg(any(test, feature = "arbitrary"))]
 impl Arbitrary for Quad {
-    fn arbitrary<G: Gen>(g: &mut G) -> Quad {
+    fn arbitrary(g: &mut Gen) -> Quad {
         Quad {
             axis: Arbitrary::arbitrary(g),
             direction: Arbitrary::arbitrary(g),
@@ -221,10 +210,11 @@ impl<T: Scalar + PartialOrd + NumCast + Float> Partition<Vector3<T>> for CubeMap
 
 #[cfg(any(test, feature = "arbitrary"))]
 impl Arbitrary for CubeMap {
-    fn arbitrary<G: Gen>(g: &mut G) -> CubeMap {
-        match { let s = g.size(); g.gen_range(0, s) } {
-            0 => CubeMap::Sphere,
-            _ => CubeMap::Quad(Arbitrary::arbitrary(g)),
+    fn arbitrary(g: &mut Gen) -> CubeMap {
+        if bool::arbitrary(g) {
+            CubeMap::Sphere
+        } else {
+            CubeMap::Quad(Arbitrary::arbitrary(g))
         }
     }
 }
@@ -232,10 +222,9 @@ impl Arbitrary for CubeMap {
 
 #[cfg(test)]
 mod test {
-    pub use nalgebra::Vector3;
-    pub use super::*;
+    use nalgebra::Vector3;
+    use super::*;
     use quickcheck::quickcheck;
-    use partition::Partition;
 
     partition_quickcheck!(quad_vec3_f32, Quad, Vector3<f32>);
     partition_quickcheck!(quad_vec3_f64, Quad, Vector3<f64>);

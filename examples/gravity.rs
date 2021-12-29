@@ -1,12 +1,12 @@
-extern crate acacia;
-extern crate nalgebra;
-extern crate rand;
-
-use acacia::partition::Ncube;
-use acacia::{AssociatedData, DataQuery, Node, Position, Tree};
+use acacia::{
+    partition::Ncube,
+    AssociatedData, DataQuery, Node, Position, Tree,
+};
 use nalgebra::{distance, zero, Point3, Vector3};
-use rand::distributions::{Distribution, Uniform};
-use rand::thread_rng;
+use rand::{
+    distributions::{Distribution, Uniform},
+    thread_rng,
+};
 
 /// Point mass
 struct PointMass {

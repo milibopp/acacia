@@ -1,13 +1,14 @@
 //! N-cube or hypercube partitioning scheme
 
-use nalgebra::base::{allocator::Allocator, default_allocator::DefaultAllocator};
-use nalgebra::{zero, DimName, Point, Scalar};
+use nalgebra::{
+    base::{allocator::Allocator, default_allocator::DefaultAllocator},
+    zero, DimName, Point, Scalar,
+};
 use num_traits::{Float, NumCast, PrimInt};
-use partition::{Partition, Subdivide};
+use super::{Partition, Subdivide};
 #[cfg(any(test, feature = "arbitrary"))]
 use quickcheck::{Arbitrary, Gen};
-use std::cmp::PartialOrd;
-use std::fmt::Debug;
+use std::{cmp::PartialOrd, fmt::Debug};
 
 /// An N-cube based partitioning scheme
 #[derive(Clone, Debug)]
@@ -117,13 +118,13 @@ where
 }
 
 #[cfg(any(test, feature = "arbitrary"))]
-impl<D: DimName, S: PartialOrd + Float + Arbitrary + Debug + Copy> Arbitrary for Ncube<D, S>
+impl<D: DimName, S: PartialOrd + Float + Arbitrary + Debug + Copy + Send> Arbitrary for Ncube<D, S>
 where
     Point<S, D>: Copy,
     DefaultAllocator: Allocator<S, D>,
     <DefaultAllocator as Allocator<S, D>>::Buffer: Send,
 {
-    fn arbitrary<G: Gen>(g: &mut G) -> Ncube<D, S> {
+    fn arbitrary(g: &mut Gen) -> Ncube<D, S> {
         use std::iter::repeat;
         Ncube::new(
             Arbitrary::arbitrary(g),
@@ -138,8 +139,8 @@ where
 
 #[cfg(test)]
 mod test {
-    pub use super::*;
-    pub use nalgebra::{Point, base::dimension::U2};
+    use super::*;
+    use nalgebra::{Point, base::dimension::U2};
 
     partition_quickcheck!(
         ncube_pnt2_f32_partition,

@@ -1,12 +1,9 @@
 //! Simple integration tests oriented towards gravity computations
 
-extern crate acacia;
-extern crate approx;
-extern crate nalgebra;
-extern crate quickcheck;
-
-use acacia::partition::Ncube;
-use acacia::{AssociatedData, DataQuery, Node, Positioned, Tree};
+use acacia::{
+    partition::Ncube,
+    AssociatedData, DataQuery, Node, Positioned, Tree,
+};
 use approx::Relative;
 use nalgebra::{distance, zero, Point2, Point3, Vector2, Vector3};
 use quickcheck::{quickcheck, TestResult};

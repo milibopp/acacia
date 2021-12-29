@@ -1,11 +1,15 @@
 //! Implementation of tree with associated data.
 
-use std::mem;
-use std::iter::IntoIterator;
-use traits::{NodeState, AssociatedData, Node, Position};
-use partition::Partition;
-use iter::Iter;
-use error::ConstructionError;
+use std::{
+    mem,
+    iter::IntoIterator,
+};
+use crate::{
+    traits::{NodeState, AssociatedData, Node, Position},
+    partition::Partition,
+    iter::Iter,
+    error::ConstructionError,
+};
 
 
 /// An N-dimensional tree
@@ -108,7 +112,7 @@ impl<P: Clone, O, D> Node for Tree<P, O, D> {
     type Container = Vec<Tree<P, O, D>>;
 
     fn state(&self) -> NodeState<&O, &Vec<Tree<P, O, D>>> {
-        use traits::NodeState::*;
+        use crate::traits::NodeState::*;
         match self.state {
             Empty => Empty,
             Leaf(ref obj) => Leaf(obj),
@@ -142,9 +146,11 @@ mod test {
     use nalgebra::{Point2, base::dimension::U2};
     use quickcheck::{TestResult, quickcheck};
 
-    use partition::Ncube;
-    use traits::{NodeState, Positioned};
-    use error::ConstructionError;
+    use crate::{
+        partition::Ncube,
+        traits::{NodeState, Positioned},
+        error::ConstructionError,
+    };
     use super::*;
 
     #[test]

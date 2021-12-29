@@ -2,7 +2,7 @@
 
 #[cfg(any(test, feature = "arbitrary"))]
 use quickcheck::{Arbitrary, Gen};
-use partition::{Partition, Subdivide, Mid};
+use super::{Partition, Subdivide, Mid};
 
 
 /// A half-open interval [a, b) between two points a and b
@@ -40,7 +40,7 @@ impl<T: Mid + PartialOrd + Copy> Partition<T> for Interval<T> {
 
 #[cfg(any(test, feature = "arbitrary"))]
 impl<T: PartialOrd + Arbitrary> Arbitrary for Interval<T> {
-    fn arbitrary<G: Gen>(g: &mut G) -> Interval<T> {
+    fn arbitrary(g: &mut Gen) -> Interval<T> {
         use std::iter::repeat;
         let a: T = Arbitrary::arbitrary(g);
         let b = repeat(())
@@ -55,7 +55,7 @@ impl<T: PartialOrd + Arbitrary> Arbitrary for Interval<T> {
 
 #[cfg(test)]
 mod test {
-    pub use super::Interval;
+    use super::Interval;
 
     partition_quickcheck!(interval_f32_partition, Interval<f32>, f32);
     partition_quickcheck!(interval_f64_partition, Interval<f64>, f64);

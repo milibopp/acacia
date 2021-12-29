@@ -3,7 +3,7 @@
 use nalgebra::{Vector2, Vector3};
 #[cfg(any(test, feature = "arbitrary"))]
 use quickcheck::{Arbitrary, Gen};
-use partition::{Partition, Subdivide, Interval, Mid};
+use super::{Partition, Subdivide, Interval, Mid};
 use std::fmt::Debug;
 
 
@@ -44,7 +44,7 @@ macro_rules! impl_arb_for_box {
     ($b: ident, $($param: ident),*) => (
         #[cfg(any(test, feature = "arbitrary"))]
         impl<T: PartialOrd + Arbitrary> Arbitrary for $b<T> {
-            fn arbitrary<G: Gen>(g: &mut G) -> $b<T> {
+            fn arbitrary(g: &mut Gen) -> $b<T> {
                 $b { $($param: Arbitrary::arbitrary(g)),* }
             }
         }

@@ -1,6 +1,6 @@
 //! Generic tree iterators.
 
-use traits::{Node, AssociatedData};
+use crate::traits::{Node, AssociatedData};
 
 
 /// An iterator over the objects in a tree.
@@ -21,7 +21,7 @@ impl<'a, T> Iterator for Iter<'a, T>
     type Item = &'a <T as Node>::Object;
 
     fn next(&mut self) -> Option<&'a <T as Node>::Object> {
-        use traits::NodeState::*;
+        use crate::traits::NodeState::*;
         match self.nodes.pop() {
             None => None,
             Some((count, node)) => match (count, node.state()) {
@@ -61,7 +61,7 @@ impl<'a, T, R> Iterator for RecurseObjects<'a, T, R>
     type Item = &'a <T as Node>::Object;
 
     fn next(&mut self) -> Option<&'a <T as Node>::Object> {
-        use traits::NodeState::*;
+        use crate::traits::NodeState::*;
         match self.nodes.pop() {
             None => None,
             Some((count, node)) => match (count, node.state()) {
@@ -104,7 +104,7 @@ impl<'a, T, R> Iterator for RecurseData<'a, T, R>
     type Item = &'a <T as AssociatedData>::Data;
 
     fn next(&mut self) -> Option<&'a <T as AssociatedData>::Data> {
-        use traits::NodeState::*;
+        use crate::traits::NodeState::*;
         match self.nodes.pop() {
             None => None,
             Some((count, node)) => match (count, node.state()) {
@@ -134,9 +134,11 @@ impl<'a, T, R> Iterator for RecurseData<'a, T, R>
 mod test {
     use nalgebra::Point2;
 
-    use partition::Ncube;
-    use traits::{Positioned, Node};
-    use pure_tree::PureTree;
+    use crate::{
+        partition::Ncube,
+        traits::{Positioned, Node},
+        pure_tree::PureTree,
+    };
     use super::*;
 
     #[test]
