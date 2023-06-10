@@ -1,11 +1,11 @@
 [package]
 name = "acacia"
 version = "0.2.0"
-authors = ["Emilia Bopp <Emilia.bopp@aepsil0n.de>"]
+authors = ["Emilia Bopp <contact@ebopp.de>"]
 description = "A spatial partitioning and tree library."
 documentation = "https://docs.rs/acacia/"
-homepage = "https://github.com/edibopp/acacia"
-repository = "https://github.com/edibopp/acacia"
+homepage = "https://github.com/milibopp/acacia"
+repository = "https://github.com/milibopp/acacia"
 readme = "README.md"
 keywords = ["algorithms", "math", "tree", "spatial"]
 license = "MPL-2.0"
